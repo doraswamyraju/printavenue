@@ -1,4 +1,4 @@
-import { query } from './db';
+import { readTable } from './db';
 import { initDatabase } from './initDb';
 
 export interface AuthUser {
@@ -10,15 +10,11 @@ export interface AuthUser {
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {
   await initDatabase();
-  const users = await query<any>(
-    `SELECT id, email, name, role, password FROM users WHERE email = ?`,
-    [email.trim().toLowerCase()]
-  );
+  const users = readTable<any>('users');
+  const user = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
 
-  if (users.length === 0) return null;
-  const user = users[0];
+  if (!user) return null;
 
-  // Plain match for pre-seeded accounts
   if (user.password === password) {
     return {
       id: user.id,
@@ -30,4 +26,3 @@ export async function authenticateUser(email: string, password: string): Promise
 
   return null;
 }
-
