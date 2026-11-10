@@ -7,6 +7,7 @@ import { DashboardSidebar, DashboardView } from '@/components/dashboard/Dashboar
 import { CatalogView } from '@/components/dashboard/CatalogView';
 import { StudioView } from '@/components/dashboard/StudioView';
 import { OrdersView } from '@/components/dashboard/OrdersView';
+import { ProductsManagementView } from '@/components/dashboard/ProductsManagementView';
 import { DemoLoginModal } from '@/components/auth/DemoLoginModal';
 
 export const MainAppLayout: React.FC = () => {
@@ -110,6 +111,16 @@ export const MainAppLayout: React.FC = () => {
             orders={orders}
             user={currentUser}
             onRefresh={fetchData}
+          />
+        ) : currentView === 'products_mgmt' && currentUser.role === 'admin' ? (
+          <ProductsManagementView
+            products={products}
+            user={currentUser}
+            onRefresh={fetchData}
+            onSelectProduct={(p) => {
+              setSelectedProduct(p);
+              setCurrentView('studio');
+            }}
           />
         ) : (
           <CatalogView
