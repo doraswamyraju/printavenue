@@ -1,0 +1,397 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Product, SheetDefinition, CustomizedSheetItem } from '@/types';
+import { AuthUser } from '@/lib/auth';
+import { SheetRenderer } from '@/components/SheetRenderer';
+import { CalendarMockupFrame } from '@/components/CalendarMockupFrame';
+import { ProtectedPreviewShield } from '@/components/common/ProtectedPreviewShield';
+import {
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  ShoppingBag,
+  Type,
+  Eye,
+  ArrowLeft
+} from 'lucide-react';
+
+interface Props {
+  product: Product;
+  user: AuthUser;
+  onBack: () => void;
+  onOrderPlaced: () => void;
+}
+
+export const StudioView: React.FC<Props> = ({
+  product,
+  user,
+  onBack,
+  onOrderPlaced,
+}) => {
+  const isCustomer = user.role === 'customer';
+  const [selectedYear, setSelectedYear] = useState<number>(product.defaultYear);
+  const [currentSheetIndex, setCurrentSheetIndex] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [showFullReview, setShowFullReview] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Sheet states
+  const [sheetData, setSheetData] = useState<Record<string, CustomizedSheetItem>>(() => {
+    const initial: Record<string, CustomizedSheetItem> = {};
+    product.sheets.forEach((sheet) => {
+      initial[sheet.id] = {
+        sheetId: sheet.id,
+        sheetTitle: sheet.title,
+        selectedTemplateId: sheet.templates[0]?.id || '',
+        userImageBase64: undefined,
+        customText: sheet.templates[0]?.textOverlay?.defaultText || '',
+      };
+    });
+    return initial;
+  });
+
+  const currentSheet: SheetDefinition = product.sheets[currentSheetIndex];
+  const currentSheetItem = sheetData[currentSheet.id];
+  const activeTemplate =
+    currentSheet.templates.find((t) => t.id === currentSheetItem.selectedTemplateId) ||
+    currentSheet.templates[0];
+
+  // Pricing calculation
+  const calculateUnitPrice = (qty: number) => {
+    const tier = product.tiers.find(
+      (t) => qty >= t.minQty && (t.maxQty ? qty <= t.maxQty : true)
+    );
+    return tier ? tier.pricePerUnit : product.basePrice;
+  };
+
+  const unitPrice = calculateUnitPrice(quantity);
+  const totalPrice = unitPrice * quantity;
+
+  // Upload handler
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const base64 = loadEvent.target?.result as string;
+      setSheetData((prev) => ({
+        ...prev,
+        [currentSheet.id]: {
+          ...prev[currentSheet.id],
+          userImageBase64: base64,
+          originalImageFileName: file.name,
+        },
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Submit order directly into database
+  const handlePlaceOrder = async () => {
+    setIsSubmitting(true);
+    try {
+      const orderPayload = {
+        customerName: user.name,
+        customerEmail: user.email,
+        customerPhone: '9876543210',
+        shippingAddress: {
+          street: '42 Print Boulevard, Design Park',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          pincode: '500081',
+        },
+        productId: product.id,
+        productTitle: product.title,
+        year: selectedYear,
+        quantity,
+        unitPrice,
+        totalAmount: totalPrice,
+        sheets: Object.values(sheetData),
+      };
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      if (!res.ok) throw new Error('Order submission failed');
+
+      alert('Order successfully saved into database!');
+      onOrderPlaced();
+    } catch {
+      alert('Failed to place order.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <ProtectedPreviewShield enabled={isCustomer}>
+      <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Studio Top bar */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <h2 className="text-xl font-black text-white">{product.title}</h2>
+              <p className="text-xs text-slate-400">
+                Sheet {currentSheetIndex + 1} of {product.sheets.length} &middot;{' '}
+                <span className="text-rose-400 font-bold">{currentSheet.title}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Year Selector */}
+            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+              <span className="text-slate-500 font-bold px-2">Year:</span>
+              {product.supportedYears.map((yr) => (
+                <button
+                  key={yr}
+                  onClick={() => setSelectedYear(yr)}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition ${
+                    selectedYear === yr
+                      ? 'bg-rose-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {yr}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowFullReview(true)}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 flex items-center gap-2"
+            >
+              <Eye className="w-3.5 h-3.5 text-rose-500" />
+              <span>Review Sheets</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Horizontal Sheet Selector Strip */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {product.sheets.map((sheet, idx) => {
+            const isFilled = !!sheetData[sheet.id]?.userImageBase64;
+            const isActive = idx === currentSheetIndex;
+            return (
+              <button
+                key={sheet.id}
+                onClick={() => {
+                  setCurrentSheetIndex(idx);
+                  setShowFullReview(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  isActive
+                    ? 'bg-rose-600 text-white shadow-md'
+                    : isFilled
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                }`}
+              >
+                {isFilled && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                <span>{sheet.title}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Workspace: Mockup & Multi-template Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left: Protected Mockup Preview (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col items-center">
+            <div className="w-full max-w-xl">
+              <CalendarMockupFrame orientation={product.orientation}>
+                <SheetRenderer
+                  template={activeTemplate}
+                  year={selectedYear}
+                  monthIndices={currentSheet.monthIndices}
+                  userImage={currentSheetItem.userImageBase64}
+                  customText={currentSheetItem.customText}
+                  aspectRatio={currentSheet.aspectRatio}
+                />
+              </CalendarMockupFrame>
+
+              {/* Prev / Next Buttons */}
+              <div className="mt-6 flex items-center justify-between">
+                <button
+                  onClick={() => currentSheetIndex > 0 && setCurrentSheetIndex(currentSheetIndex - 1)}
+                  disabled={currentSheetIndex === 0}
+                  className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4 inline mr-1" /> Prev Sheet
+                </button>
+
+                <span className="text-xs font-mono font-bold text-slate-500">
+                  {currentSheetIndex + 1} / {product.sheets.length}
+                </span>
+
+                <button
+                  onClick={() => {
+                    if (currentSheetIndex < product.sheets.length - 1) {
+                      setCurrentSheetIndex(currentSheetIndex + 1);
+                    } else {
+                      setShowFullReview(true);
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20"
+                >
+                  {currentSheetIndex === product.sheets.length - 1 ? 'Finish & Review' : 'Next Sheet'} <ChevronRight className="w-4 h-4 inline ml-1" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Upload & Instant Multi-Template Variations (5 cols) */}
+          <div className="lg:col-span-5 space-y-5">
+            {/* 1. Upload box */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
+                  Step 1: Upload Photo for {currentSheet.title}
+                </h3>
+                {currentSheetItem.userImageBase64 && (
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                  </span>
+                )}
+              </div>
+
+              <label className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-rose-500/40 hover:border-rose-500 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition">
+                <Upload className="w-4 h-4" />
+                <span>{currentSheetItem.userImageBase64 ? 'Change Uploaded Photo' : 'Select Photo (PNG / JPG / WEBP)'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* 2. Instant Multi-Design options */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
+                  Step 2: Choose Template ({currentSheet.templates.length} Styles)
+                </h3>
+                <span className="text-[10px] text-slate-500 font-mono">LIVE PREVIEW</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                {currentSheet.templates.map((tpl) => {
+                  const isSelected = tpl.id === activeTemplate.id;
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={() => {
+                        setSheetData((prev) => ({
+                          ...prev,
+                          [currentSheet.id]: {
+                            ...prev[currentSheet.id],
+                            selectedTemplateId: tpl.id,
+                          },
+                        }));
+                      }}
+                      className={`p-2 rounded-xl border-2 text-left transition flex flex-col gap-2 ${
+                        isSelected
+                          ? 'border-rose-600 bg-slate-800 shadow-md ring-2 ring-rose-600/30'
+                          : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="rounded overflow-hidden pointer-events-none">
+                        <SheetRenderer
+                          template={tpl}
+                          year={selectedYear}
+                          monthIndices={currentSheet.monthIndices}
+                          userImage={currentSheetItem.userImageBase64}
+                          customText={currentSheetItem.customText}
+                          aspectRatio={currentSheet.aspectRatio}
+                          className="scale-95 origin-center shadow-none border-none"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-200">
+                        <span className="truncate">{tpl.name}</span>
+                        {isSelected && <CheckCircle2 className="w-3 h-3 text-rose-500" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Caption text */}
+              <div className="pt-2">
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                  Optional Caption / Date Highlight:
+                </label>
+                <input
+                  type="text"
+                  maxLength={40}
+                  value={currentSheetItem.customText || ''}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setSheetData((prev) => ({
+                      ...prev,
+                      [currentSheet.id]: {
+                        ...prev[currentSheet.id],
+                        customText: text,
+                      },
+                    }));
+                  }}
+                  placeholder="e.g. Joyful Memories"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+
+            {/* Pricing card & Checkout */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-900 border border-rose-900/40 space-y-4">
+              <div className="flex justify-between items-baseline">
+                <div>
+                  <span className="text-2xl font-black text-rose-400">₹{unitPrice}</span>
+                  <span className="text-xs text-slate-400 ml-1">/ piece</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400">Qty:</span>
+                  <select
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="bg-slate-950 text-white text-xs font-bold rounded-lg px-2.5 py-1 border border-slate-700"
+                  >
+                    {[1, 2, 3, 5, 10, 20, 50, 100].map((q) => (
+                      <option key={q} value={q}>{q}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-between text-xs pt-2 border-t border-slate-800">
+                <span className="text-slate-400">Total Amount:</span>
+                <span className="text-base font-extrabold text-white">₹{totalPrice}</span>
+              </div>
+
+              <button
+                onClick={handlePlaceOrder}
+                disabled={isSubmitting}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-rose-600/30 transition disabled:opacity-50"
+              >
+                {isSubmitting ? 'Placing Order...' : `Submit Order (₹${totalPrice})`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProtectedPreviewShield>
+  );
+};
+
