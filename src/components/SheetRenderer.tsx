@@ -26,8 +26,8 @@ export const SheetRenderer: React.FC<Props> = ({
   className = '',
 }) => {
   const isCover = !monthIndices || monthIndices.length === 0;
-
   const isGraphicArtwork = template.background.type === 'image';
+  const isUnderArtwork = template.imageLayout.layerPosition === 'under-artwork';
 
   return (
     <div
@@ -35,14 +35,13 @@ export const SheetRenderer: React.FC<Props> = ({
       style={{
         aspectRatio: aspectRatio,
         backgroundColor: !isGraphicArtwork ? template.background.value : undefined,
-        backgroundImage: isGraphicArtwork ? `url(${template.background.value})` : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
       }}
     >
-      {/* 1. User Uploaded Image or Placeholder */}
+      {/* 1. User Uploaded Image Slot (Placed at back if layerPosition === 'under-artwork') */}
       <div
-        className="absolute transition-all overflow-hidden bg-slate-100 flex items-center justify-center border border-dashed border-slate-300"
+        className={`absolute transition-all overflow-hidden flex items-center justify-center ${
+          isUnderArtwork ? 'z-0' : 'z-20 border border-dashed border-slate-300'
+        }`}
         style={{
           left: `${template.imageLayout.x}%`,
           top: `${template.imageLayout.y}%`,
@@ -76,24 +75,36 @@ export const SheetRenderer: React.FC<Props> = ({
             style={{ objectFit: template.imageLayout.objectFit || 'cover' }}
           />
         ) : (
-          <div className="text-center p-3 text-slate-400">
+          <div className="text-center p-3 text-slate-400 bg-slate-100/60 w-full h-full flex flex-col items-center justify-center">
             <svg
               className="w-8 h-8 mx-auto mb-1 stroke-current opacity-60"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span className="text-[10px] font-medium tracking-wide uppercase">Your Photo Here</span>
           </div>
         )}
       </div>
 
-      {/* 2. Calendar Grid (if not cover) */}
+      {/* 2. Base Artwork Layer (Foreground Frame with transparent cutouts) */}
+      {isGraphicArtwork && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={template.background.value}
+          alt="Base Artwork"
+          className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
+            isUnderArtwork ? 'z-10' : 'z-0'
+          }`}
+        />
+      )}
+
+      {/* 3. Calendar Grid (if not cover and not already inside artwork) */}
       {!isCover && template.calendarLayout.width > 0 && (
         <div
-          className="absolute flex flex-col justify-start p-1 sm:p-2"
+          className="absolute z-20 flex flex-col justify-start p-1 sm:p-2 pointer-events-none"
           style={{
             left: `${template.calendarLayout.x}%`,
             top: `${template.calendarLayout.y}%`,
@@ -105,7 +116,6 @@ export const SheetRenderer: React.FC<Props> = ({
             const matrix = getMonthMatrix(year, mIdx);
             return (
               <div key={mIdx} className="w-full mb-1">
-                {/* Month Name & Year Header */}
                 <div className="flex items-baseline justify-between border-b pb-1 mb-1 border-slate-300">
                   <span className="font-bold text-xs sm:text-sm text-slate-800 tracking-wider uppercase">
                     {MONTH_NAMES[mIdx]}
@@ -115,7 +125,6 @@ export const SheetRenderer: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {/* Weekday headers */}
                 <div className="grid grid-cols-7 gap-0.5 text-center mb-0.5">
                   {DAYS_SHORT.map((d, i) => (
                     <span
@@ -129,7 +138,6 @@ export const SheetRenderer: React.FC<Props> = ({
                   ))}
                 </div>
 
-                {/* Days Grid */}
                 <div className="grid grid-cols-7 gap-0.5 text-center">
                   {matrix.flat().map((day, idx) => {
                     const isSunday = idx % 7 === 0;
@@ -155,19 +163,9 @@ export const SheetRenderer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Optional Foreground Overlay Frame (for templates where frame sits in front of the photo) */}
-      {template.overlayImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={template.overlayImage}
-          alt="Template Frame"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
-        />
-      )}
-
-      {/* 3. Cover Page Branding / Typography */}
+      {/* 4. Cover Page Branding */}
       {isCover && (
-        <div className="absolute inset-x-0 bottom-6 text-center px-4">
+        <div className="absolute inset-x-0 bottom-6 text-center px-4 z-20">
           <p className="text-sm font-semibold tracking-widest text-slate-700 uppercase">
             {customText || 'CALENDAR COLLECTION'}
           </p>
@@ -177,10 +175,10 @@ export const SheetRenderer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 4. Custom Text Overlay (Optional) */}
+      {/* 5. Custom Text Overlay (Optional) */}
       {!isCover && customText && (
         <div
-          className="absolute text-center px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm shadow"
+          className="absolute z-20 text-center px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm shadow pointer-events-none"
           style={{
             left: `${template.textOverlay?.position.x || 10}%`,
             top: `${template.textOverlay?.position.y || 88}%`,
@@ -189,14 +187,6 @@ export const SheetRenderer: React.FC<Props> = ({
           {customText}
         </div>
       )}
-
-      {/* Subtle Template Badge */}
-      <div className="absolute top-1 right-1.5 opacity-40 hover:opacity-100 transition-opacity">
-        <span className="text-[9px] font-mono uppercase bg-slate-900/10 text-slate-700 px-1 rounded">
-          {template.style}
-        </span>
-      </div>
     </div>
   );
 };
-

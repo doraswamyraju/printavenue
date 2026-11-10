@@ -63,6 +63,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   });
 
   const [hasArtworkCalendar, setHasArtworkCalendar] = useState<boolean>(true);
+  const [layerPosition, setLayerPosition] = useState<'under-artwork' | 'over-artwork'>('under-artwork');
   const [isSaving, setIsSaving] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -215,6 +216,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
           objectFit: 'cover',
           shapeType: 'polygon',
           polygonPoints: relativePolygonPoints,
+          layerPosition: layerPosition,
         },
         calendarLayout: {
           x: 50,
@@ -451,6 +453,40 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   Artwork contains printed calendar dates (hide grid)
                 </span>
               </label>
+
+              {/* Layer Positioning Control */}
+              <div className="pt-2 border-t border-slate-800">
+                <span className="block font-bold text-slate-300 mb-1.5 text-[11px]">
+                  Photo Layer Depth:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLayerPosition('under-artwork')}
+                    className={`p-2 rounded-xl border text-center transition ${
+                      layerPosition === 'under-artwork'
+                        ? 'bg-rose-950/80 border-rose-600 text-white font-bold'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold">Behind Base Artwork</div>
+                    <div className="text-[8px] text-slate-400 mt-0.5">(Leaves & flowers stay in front)</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLayerPosition('over-artwork')}
+                    className={`p-2 rounded-xl border text-center transition ${
+                      layerPosition === 'over-artwork'
+                        ? 'bg-rose-950/80 border-rose-600 text-white font-bold'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold">Above Base Artwork</div>
+                    <div className="text-[8px] text-slate-400 mt-0.5">(Photo placed directly on top)</div>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Step 2: Name & Month Sheet */}
