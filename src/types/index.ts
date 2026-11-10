@@ -22,9 +22,10 @@ export interface DesignTemplate {
     headerPosition?: 'top' | 'left';
   };
   background: {
-    type: 'color' | 'gradient' | 'pattern';
-    value: string;
+    type: 'color' | 'gradient' | 'pattern' | 'image';
+    value: string; // Hex color, gradient string, or Image URL / Base64 of artwork
   };
+  overlayImage?: string; // Optional foreground frame image (with transparent hole)
   textOverlay?: {
     enabled: boolean;
     defaultText?: string;

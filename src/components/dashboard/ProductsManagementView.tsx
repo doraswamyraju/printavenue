@@ -8,6 +8,7 @@ import { TemplateBuilderModal } from '@/components/admin/TemplateBuilderModal';
 
 interface Props {
   products: Product[];
+  allProducts?: Product[];
   user: AuthUser;
   onRefresh: () => void;
   onSelectProduct: (p: Product) => void;
@@ -117,6 +118,7 @@ export const ProductsManagementView: React.FC<Props> = ({
       {selectedProductForTemplates && (
         <TemplateBuilderModal
           product={selectedProductForTemplates}
+          allProducts={products}
           isOpen={!!selectedProductForTemplates}
           onClose={() => setSelectedProductForTemplates(null)}
           onSaved={onRefresh}
@@ -125,3 +127,4 @@ export const ProductsManagementView: React.FC<Props> = ({
     </div>
   );
 };
+

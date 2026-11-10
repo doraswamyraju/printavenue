@@ -27,12 +27,17 @@ export const SheetRenderer: React.FC<Props> = ({
 }) => {
   const isCover = !monthIndices || monthIndices.length === 0;
 
+  const isGraphicArtwork = template.background.type === 'image';
+
   return (
     <div
       className={`relative w-full overflow-hidden shadow-lg border border-slate-200 select-none bg-white transition-all ${className}`}
       style={{
         aspectRatio: aspectRatio,
-        backgroundColor: template.background.value,
+        backgroundColor: !isGraphicArtwork ? template.background.value : undefined,
+        backgroundImage: isGraphicArtwork ? `url(${template.background.value})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
     >
       {/* 1. User Uploaded Image or Placeholder */}
@@ -148,6 +153,16 @@ export const SheetRenderer: React.FC<Props> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Optional Foreground Overlay Frame (for templates where frame sits in front of the photo) */}
+      {template.overlayImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={template.overlayImage}
+          alt="Template Frame"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+        />
       )}
 
       {/* 3. Cover Page Branding / Typography */}

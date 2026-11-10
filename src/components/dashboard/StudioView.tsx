@@ -14,7 +14,9 @@ import {
   ShoppingBag,
   Type,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  Maximize2,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -35,6 +37,7 @@ export const StudioView: React.FC<Props> = ({
   const [currentSheetIndex, setCurrentSheetIndex] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [showFullReview, setShowFullReview] = useState<boolean>(false);
+  const [showBroadTemplatesModal, setShowBroadTemplatesModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Sheet states
@@ -285,7 +288,15 @@ export const StudioView: React.FC<Props> = ({
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">
                   Step 2: Choose Template ({currentSheet.templates.length} Styles)
                 </h3>
-                <span className="text-[10px] text-slate-500 font-mono">LIVE PREVIEW</span>
+                <button
+                  type="button"
+                  onClick={() => setShowBroadTemplatesModal(true)}
+                  className="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[10px] font-bold flex items-center gap-1 transition"
+                  title="Expand to full screen gallery"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  <span>Broader View</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
@@ -390,6 +401,89 @@ export const StudioView: React.FC<Props> = ({
             </div>
           </div>
         </div>
+
+        {/* Modal: Broader Multi-Template Selection Gallery */}
+        {showBroadTemplatesModal && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl text-slate-100">
+              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-lg text-white">
+                    Choose Your Favorite Design for {currentSheet.title}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Viewing all available layout styles in full resolution with your uploaded photo live in action.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowBroadTemplatesModal(false)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* High-Impact Broad Grid (3 cols on desktop) */}
+              <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentSheet.templates.map((tpl) => {
+                  const isSelected = tpl.id === activeTemplate.id;
+                  return (
+                    <div
+                      key={tpl.id}
+                      onClick={() => {
+                        setSheetData((prev) => ({
+                          ...prev,
+                          [currentSheet.id]: {
+                            ...prev[currentSheet.id],
+                            selectedTemplateId: tpl.id,
+                          },
+                        }));
+                        setShowBroadTemplatesModal(false);
+                      }}
+                      className={`group cursor-pointer rounded-2xl border-2 p-3 transition flex flex-col gap-3 ${
+                        isSelected
+                          ? 'border-rose-600 bg-slate-800/90 shadow-2xl ring-2 ring-rose-600/40'
+                          : 'border-slate-800 bg-slate-950 hover:border-slate-700 hover:bg-slate-900'
+                      }`}
+                    >
+                      <div className="rounded-xl overflow-hidden pointer-events-none shadow-md">
+                        <SheetRenderer
+                          template={tpl}
+                          year={selectedYear}
+                          monthIndices={currentSheet.monthIndices}
+                          userImage={currentSheetItem.userImageBase64}
+                          customText={currentSheetItem.customText}
+                          aspectRatio={currentSheet.aspectRatio}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div>
+                          <span className="font-extrabold text-sm text-white block group-hover:text-rose-400 transition">
+                            {tpl.name}
+                          </span>
+                          <span className="text-[10px] uppercase font-mono text-slate-500">
+                            Style: {tpl.style}
+                          </span>
+                        </div>
+                        {isSelected ? (
+                          <span className="px-3 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold flex items-center gap-1 shadow">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Selected
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold group-hover:bg-rose-600 group-hover:text-white transition">
+                            Apply This Style
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedPreviewShield>
   );
