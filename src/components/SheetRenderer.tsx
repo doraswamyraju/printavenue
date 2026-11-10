@@ -44,6 +44,22 @@ export const SheetRenderer: React.FC<Props> = ({
           width: `${template.imageLayout.width}%`,
           height: `${template.imageLayout.height}%`,
           borderRadius: `${template.imageLayout.borderRadius || 0}px`,
+          clipPath:
+            template.imageLayout.shapeType === 'polygon' && template.imageLayout.polygonPoints
+              ? `polygon(${template.imageLayout.polygonPoints})`
+              : template.imageLayout.shapeType === 'circle'
+              ? 'circle(50% at 50% 50%)'
+              : undefined,
+          maskImage:
+            template.imageLayout.shapeType === 'svgMask' && template.imageLayout.maskSvgUrl
+              ? `url(${template.imageLayout.maskSvgUrl})`
+              : undefined,
+          WebkitMaskImage:
+            template.imageLayout.shapeType === 'svgMask' && template.imageLayout.maskSvgUrl
+              ? `url(${template.imageLayout.maskSvgUrl})`
+              : undefined,
+          maskSize: 'cover',
+          WebkitMaskSize: 'cover',
         }}
       >
         {userImage ? (

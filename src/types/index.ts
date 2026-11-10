@@ -9,6 +9,9 @@ export interface DesignTemplate {
     height: number; // percentage (0-100)
     borderRadius?: number; // px
     objectFit?: 'cover' | 'contain';
+    shapeType?: 'rect' | 'circle' | 'polygon' | 'svgMask';
+    polygonPoints?: string; // e.g. "50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%"
+    maskSvgUrl?: string; // e.g. SVG path or PNG alpha mask
   };
   calendarLayout: {
     x: number; // percentage (0-100)
