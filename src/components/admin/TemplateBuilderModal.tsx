@@ -26,6 +26,8 @@ interface Point {
 interface Props {
   product: Product;
   allProducts: Product[];
+  initialTemplate?: DesignTemplate;
+  initialSheetIndex?: number;
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -34,26 +36,51 @@ interface Props {
 export const TemplateBuilderModal: React.FC<Props> = ({
   product,
   allProducts,
+  initialTemplate,
+  initialSheetIndex,
   isOpen,
   onClose,
   onSaved,
 }) => {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([product.id]);
-  const [selectedSheetNumber, setSelectedSheetNumber] = useState<number>(6); // Default July (index 6)
-  const [templateName, setTemplateName] = useState('');
-  const [artworkImage, setArtworkImage] = useState<string>('');
+  const [selectedSheetNumber, setSelectedSheetNumber] = useState<number>(
+    initialSheetIndex !== undefined ? initialSheetIndex : 6
+  );
+  const [templateName, setTemplateName] = useState(initialTemplate?.name || '');
+  const [artworkImage, setArtworkImage] = useState<string>(
+    initialTemplate?.background.type === 'image' ? initialTemplate.background.value : ''
+  );
 
-  // Mode: 'polygon' or 'box'
-  const [editMode, setEditMode] = useState<'polygon' | 'box'>('polygon');
-
-  // Interactive Polygon Points (Can go from 0% to 100% unrestricted)
-  const [points, setPoints] = useState<Point[]>([
-    { x: 0, y: 0 },
-    { x: 34, y: 0 },
-    { x: 45, y: 38 },
-    { x: 35, y: 76 },
-    { x: 0, y: 76 },
-  ]);
+  // Parse points if editing an existing template
+  const [points, setPoints] = useState<Point[]>(() => {
+    if (initialTemplate?.imageLayout.shapeType === 'polygon' && initialTemplate.imageLayout.polygonPoints) {
+      try {
+        const parts = initialTemplate.imageLayout.polygonPoints.split(',');
+        const parsed = parts.map((pt) => {
+          const [xStr, yStr] = pt.trim().split(/\s+/);
+          const relX = parseFloat(xStr);
+          const relY = parseFloat(yStr);
+          // Convert back to canvas percentages
+          const absX = initialTemplate.imageLayout.x + (relX / 100) * initialTemplate.imageLayout.width;
+          const absY = initialTemplate.imageLayout.y + (relY / 100) * initialTemplate.imageLayout.height;
+          return {
+            x: parseFloat(absX.toFixed(1)),
+            y: parseFloat(absY.toFixed(1)),
+          };
+        });
+        if (parsed.length >= 3) return parsed;
+      } catch {
+        // fallback
+      }
+    }
+    return [
+      { x: 0, y: 0 },
+      { x: 34, y: 0 },
+      { x: 45, y: 38 },
+      { x: 35, y: 76 },
+      { x: 0, y: 76 },
+    ];
+  });
 
   const [activePointIdx, setActivePointIdx] = useState<number | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);

@@ -39,7 +39,29 @@ export async function addTemplateToSheet(
 
   const sheet = products[prodIndex].sheets.find((s) => s.id === sheetId);
   if (sheet) {
-    sheet.templates.push(template);
+    const existingIdx = sheet.templates.findIndex((t) => t.id === template.id);
+    if (existingIdx >= 0) {
+      sheet.templates[existingIdx] = template; // update in place
+    } else {
+      sheet.templates.push(template);
+    }
+    writeTable('products', products);
+  }
+}
+
+export async function deleteTemplateFromSheet(
+  productId: string,
+  sheetId: string,
+  templateId: string
+): Promise<void> {
+  await ensureDb();
+  const products = await getAllProducts();
+  const prodIndex = products.findIndex((p) => p.id === productId);
+  if (prodIndex < 0) return;
+
+  const sheet = products[prodIndex].sheets.find((s) => s.id === sheetId);
+  if (sheet) {
+    sheet.templates = sheet.templates.filter((t) => t.id !== templateId);
     writeTable('products', products);
   }
 }
