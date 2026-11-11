@@ -12,7 +12,34 @@ async function ensureDb() {
 
 export async function getAllProducts(): Promise<Product[]> {
   await ensureDb();
-  return readTable<Product>('products');
+  const products = readTable<Product>('products');
+  // Ensure default status is 'published' for legacy products
+  return products.map((p) => ({
+    ...p,
+    status: p.status || 'published',
+  }));
+}
+
+export async function saveProduct(product: Product): Promise<void> {
+  await ensureDb();
+  const products = await getAllProducts();
+  const idx = products.findIndex((p) => p.id === product.id);
+  if (idx >= 0) {
+    products[idx] = product;
+  } else {
+    products.push(product);
+  }
+  writeTable('products', products);
+}
+
+export async function toggleProductPublishStatus(id: string, status: 'draft' | 'published'): Promise<void> {
+  await ensureDb();
+  const products = await getAllProducts();
+  const p = products.find((prod) => prod.id === id);
+  if (p) {
+    p.status = status;
+    writeTable('products', products);
+  }
 }
 
 export async function getProductBySlugOrId(slugOrId: string): Promise<Product | null> {

@@ -27,6 +27,7 @@ interface Props {
 
 export const ProductsManagementView: React.FC<Props> = ({
   products,
+  user,
   onRefresh,
   onSelectProduct,
 }) => {
@@ -39,6 +40,28 @@ export const ProductsManagementView: React.FC<Props> = ({
   } | null>(null);
 
   const [filterMonth, setFilterMonth] = useState<string>('ALL');
+
+  const isSuperAdmin = user.role === 'superadmin';
+
+  const handleTogglePublish = async (productId: string, currentStatus?: string) => {
+    const newStatus = currentStatus === 'draft' ? 'published' : 'draft';
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggleStatus',
+          id: productId,
+          status: newStatus,
+        }),
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch {
+      alert('Failed to update product status');
+    }
+  };
 
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product from the database?')) return;
@@ -267,9 +290,20 @@ export const ProductsManagementView: React.FC<Props> = ({
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                      {p.category.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                        {p.category.toUpperCase()}
+                      </span>
+                      {p.status === 'draft' ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          STAGING DRAFT
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          LIVE STORE
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs font-black text-rose-400">₹{p.basePrice}</span>
                   </div>
                   <h3 className="font-extrabold text-base text-white">{p.title}</h3>
@@ -302,6 +336,21 @@ export const ProductsManagementView: React.FC<Props> = ({
                   </button>
 
                   <div className="flex items-center gap-2">
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublish(p.id, p.status)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition border ${
+                          p.status === 'draft'
+                            ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-300'
+                            : 'bg-amber-950/80 hover:bg-amber-900 border-amber-700 text-amber-300'
+                        }`}
+                        title={p.status === 'draft' ? 'Publish to store' : 'Unpublish to draft'}
+                      >
+                        {p.status === 'draft' ? 'Publish to Store' : 'Revert to Draft'}
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => onSelectProduct(p)}

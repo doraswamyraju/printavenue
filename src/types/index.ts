@@ -80,7 +80,8 @@ export interface Product {
   slug: string;
   title: string;
   description: string;
-  category: 'desk' | 'wall';
+  category: 'desk' | 'wall' | 'memento' | 'banner' | 'card' | 'other' | string;
+  status?: 'draft' | 'published'; // 'draft' is only visible to superadmin
   orientation: 'landscape' | 'portrait';
   dimensions: string; // e.g. "A5 (8.3 x 5.8 inches)"
   paperQuality: string; // e.g. "300 GSM Premium Card Stock"

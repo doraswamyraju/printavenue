@@ -19,10 +19,11 @@ export const MainAppLayout: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Load database data
-  const fetchData = async () => {
+  const fetchData = async (userRole?: string) => {
     try {
+      const roleParam = userRole ? `?role=${userRole}` : '';
       const [prodRes, ordRes] = await Promise.all([
-        fetch('/api/products'),
+        fetch(`/api/products${roleParam}`),
         fetch('/api/orders'),
       ]);
       const prodData = await prodRes.json();
@@ -38,31 +39,38 @@ export const MainAppLayout: React.FC = () => {
   };
 
   useEffect(() => {
-    // Check session or default to Admin demo account
+    let effectiveUser: AuthUser;
     const stored = localStorage.getItem('printavenue_session');
     if (stored) {
       try {
-        setCurrentUser(JSON.parse(stored));
+        effectiveUser = JSON.parse(stored);
+        setCurrentUser(effectiveUser);
       } catch {
-        // ignore
+        effectiveUser = {
+          id: 'usr_admin',
+          email: 'admin@printavenue.com',
+          name: 'Admin',
+          role: 'admin',
+        };
+        setCurrentUser(effectiveUser);
       }
     } else {
-      // Auto-set Admin as default demo session
-      const defaultAdmin: AuthUser = {
+      effectiveUser = {
         id: 'usr_admin',
         email: 'admin@printavenue.com',
         name: 'Admin',
         role: 'admin',
       };
-      setCurrentUser(defaultAdmin);
-      localStorage.setItem('printavenue_session', JSON.stringify(defaultAdmin));
+      setCurrentUser(effectiveUser);
+      localStorage.setItem('printavenue_session', JSON.stringify(effectiveUser));
     }
-    fetchData();
+    fetchData(effectiveUser.role);
   }, []);
 
   const handleLoginSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     localStorage.setItem('printavenue_session', JSON.stringify(user));
+    fetchData(user.role);
   };
 
   const handleLogout = () => {
@@ -110,13 +118,13 @@ export const MainAppLayout: React.FC = () => {
           <OrdersView
             orders={orders}
             user={currentUser}
-            onRefresh={fetchData}
+            onRefresh={() => fetchData(currentUser.role)}
           />
         ) : currentView === 'products_mgmt' && (currentUser.role === 'admin' || currentUser.role === 'superadmin') ? (
           <ProductsManagementView
             products={products}
             user={currentUser}
-            onRefresh={fetchData}
+            onRefresh={() => fetchData(currentUser.role)}
             onSelectProduct={(p) => {
               setSelectedProduct(p);
               setCurrentView('studio');
@@ -130,7 +138,7 @@ export const MainAppLayout: React.FC = () => {
               setSelectedProduct(p);
               setCurrentView('studio');
             }}
-            onRefresh={fetchData}
+            onRefresh={() => fetchData(currentUser.role)}
           />
         )}
       </main>
