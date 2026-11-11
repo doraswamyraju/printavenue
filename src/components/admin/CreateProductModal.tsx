@@ -447,3 +447,4 @@ export const CreateProductModal: React.FC<Props> = ({
     </div>
   );
 };
+
