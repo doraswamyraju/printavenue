@@ -36,7 +36,8 @@ export const DashboardSidebar: React.FC<Props> = ({
   onSelectView,
   onLogout,
 }) => {
-  const isAdmin = user.role === 'admin';
+  const isSuperAdmin = user.role === 'superadmin';
+  const isAdmin = user.role === 'admin' || isSuperAdmin;
   const isStaff = user.role === 'staff' || isAdmin;
   const isCustomer = user.role === 'customer';
 
@@ -62,7 +63,9 @@ export const DashboardSidebar: React.FC<Props> = ({
         <div className="p-4 mx-3 my-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center gap-3">
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shadow-inner ${
-              user.role === 'admin'
+              user.role === 'superadmin'
+                ? 'bg-purple-600 ring-2 ring-purple-400/50'
+                : user.role === 'admin'
                 ? 'bg-rose-600'
                 : user.role === 'staff'
                 ? 'bg-amber-600'

@@ -5,7 +5,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'staff' | 'customer';
+  role: 'superadmin' | 'admin' | 'staff' | 'customer';
 }
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {

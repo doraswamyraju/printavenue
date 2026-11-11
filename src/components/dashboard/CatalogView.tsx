@@ -18,7 +18,7 @@ export const CatalogView: React.FC<Props> = ({
   onSelectProduct,
   onRefresh,
 }) => {
-  const isAdmin = user.role === 'admin';
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
   const handleDelete = async (e: React.MouseEvent, productId: string) => {
     e.stopPropagation();

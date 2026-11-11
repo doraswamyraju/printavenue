@@ -22,7 +22,7 @@ interface Props {
 }
 
 export const OrdersView: React.FC<Props> = ({ orders, user, onRefresh }) => {
-  const isStaff = user.role === 'staff' || user.role === 'admin';
+  const isStaff = user.role === 'staff' || user.role === 'admin' || user.role === 'superadmin';
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(orders[0] || null);
   const [filter, setFilter] = useState<string>('ALL');
 

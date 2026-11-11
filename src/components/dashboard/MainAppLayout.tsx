@@ -51,7 +51,7 @@ export const MainAppLayout: React.FC = () => {
       const defaultAdmin: AuthUser = {
         id: 'usr_admin',
         email: 'admin@printavenue.com',
-        name: 'Super Admin',
+        name: 'Admin',
         role: 'admin',
       };
       setCurrentUser(defaultAdmin);
@@ -112,7 +112,7 @@ export const MainAppLayout: React.FC = () => {
             user={currentUser}
             onRefresh={fetchData}
           />
-        ) : currentView === 'products_mgmt' && currentUser.role === 'admin' ? (
+        ) : currentView === 'products_mgmt' && (currentUser.role === 'admin' || currentUser.role === 'superadmin') ? (
           <ProductsManagementView
             products={products}
             user={currentUser}

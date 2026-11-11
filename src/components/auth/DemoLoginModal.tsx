@@ -16,10 +16,10 @@ export const DemoLoginModal: React.FC<Props> = ({ onSuccess }) => {
 
   const demoAccounts = [
     {
-      name: 'Super Admin',
+      name: 'Admin',
       email: 'admin@printavenue.com',
       password: 'Admin@2027',
-      role: 'Full Control',
+      role: 'Store Admin',
       badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     },
     {
