@@ -53,6 +53,33 @@ export const TemplateBuilderModal: React.FC<Props> = ({
     initialTemplate?.background.type === 'image' ? initialTemplate.background.value : ''
   );
 
+  // Dynamic Aspect Ratio: detected from artwork image OR from sheet definition
+  const targetSheet = product.sheets[selectedSheetNumber] || product.sheets[0];
+  const defaultRatio = parseFloat(targetSheet?.aspectRatio || '1.414') || 1.414;
+  const [canvasAspectRatio, setCanvasAspectRatio] = useState<number>(defaultRatio);
+
+  // When sheet changes, update aspect ratio if no custom artwork image loaded
+  useEffect(() => {
+    if (!artworkImage && targetSheet?.aspectRatio) {
+      const r = parseFloat(targetSheet.aspectRatio);
+      if (r > 0) setCanvasAspectRatio(r);
+    }
+  }, [selectedSheetNumber, targetSheet?.aspectRatio, artworkImage]);
+
+  // When artworkImage changes (e.g. loaded from initialTemplate or uploaded), calculate natural image aspect ratio
+  useEffect(() => {
+    if (artworkImage) {
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          const ratio = parseFloat((img.naturalWidth / img.naturalHeight).toFixed(4));
+          setCanvasAspectRatio(ratio);
+        }
+      };
+      img.src = artworkImage;
+    }
+  }, [artworkImage]);
+
   // Parse points if editing an existing template
   const [points, setPoints] = useState<Point[]>(() => {
     if (initialTemplate?.imageLayout.shapeType === 'polygon' && initialTemplate.imageLayout.polygonPoints) {
@@ -256,7 +283,18 @@ export const TemplateBuilderModal: React.FC<Props> = ({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (loadEvt) => {
-      setArtworkImage(loadEvt.target?.result as string);
+      const dataUrl = loadEvt.target?.result as string;
+      setArtworkImage(dataUrl);
+
+      // Detect natural width and height of the uploaded image
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          const ratio = parseFloat((img.naturalWidth / img.naturalHeight).toFixed(4));
+          setCanvasAspectRatio(ratio);
+        }
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -471,6 +509,21 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   type="button"
                   onClick={() =>
                     setPoints([
+                      { x: 15, y: 15 },
+                      { x: 85, y: 15 },
+                      { x: 85, y: 85 },
+                      { x: 15, y: 85 },
+                    ])
+                  }
+                  className="px-2.5 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 font-bold text-[11px]"
+                >
+                  ▢ Rectangle Frame
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPoints([
                       { x: 0, y: 0 },
                       { x: 34, y: 0 },
                       { x: 45, y: 38 },
@@ -480,7 +533,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   }
                   className="px-2.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold text-[11px]"
                 >
-                  ⚡ July Slant Preset
+                  ⚡ Slant Preset
                 </button>
               </div>
 
@@ -511,19 +564,29 @@ export const TemplateBuilderModal: React.FC<Props> = ({
 
             {/* The Canvas */}
             <div
-              ref={canvasRef}
-              onClick={handleCanvasClick}
-              className={`relative w-full rounded-2xl overflow-hidden border border-slate-700 select-none shadow-2xl bg-slate-800 transition-all ${
-                clickToAddMode ? 'cursor-crosshair' : ''
-              }`}
-              style={{
-                aspectRatio: '1.414',
-                backgroundImage: artworkImage ? `url(${artworkImage})` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                opacity: artworkOpacity / 100,
-              }}
+              className="w-full flex items-center justify-center p-2"
+              style={{ minHeight: '380px' }}
             >
+              <div
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                className={`relative rounded-2xl overflow-hidden border border-slate-700 select-none shadow-2xl bg-slate-800 transition-all ${
+                  clickToAddMode ? 'cursor-crosshair' : ''
+                }`}
+                style={{
+                  aspectRatio: `${canvasAspectRatio}`,
+                  // Fit nicely within container without stretching
+                  width: canvasAspectRatio > 1 ? '100%' : 'auto',
+                  height: canvasAspectRatio <= 1 ? '68vh' : 'auto',
+                  maxHeight: '72vh',
+                  maxWidth: '100%',
+                  backgroundImage: artworkImage ? `url(${artworkImage})` : undefined,
+                  backgroundSize: '100% 100%',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  opacity: artworkOpacity / 100,
+                }}
+              >
               {!artworkImage && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
                   <ImageIcon className="w-10 h-10 stroke-1" />
@@ -686,6 +749,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   </div>
                 );
               })}
+              </div>
             </div>
 
             {/* Shape Movement, Scaling & Coordinate Controls */}
