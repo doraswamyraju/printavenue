@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { TemplateBuilderModal } from '@/components/admin/TemplateBuilderModal';
+import { CreateProductModal } from '@/components/admin/CreateProductModal';
 import { SheetRenderer } from '@/components/SheetRenderer';
 
 interface Props {
@@ -40,6 +41,7 @@ export const ProductsManagementView: React.FC<Props> = ({
   } | null>(null);
 
   const [filterMonth, setFilterMonth] = useState<string>('ALL');
+  const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
 
   const isSuperAdmin = user.role === 'superadmin';
 
@@ -149,9 +151,18 @@ export const ProductsManagementView: React.FC<Props> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Calendar Products ({products.length})
+              Calendar & Custom Products ({products.length})
             </button>
           </div>
+
+          {isSuperAdmin && (
+            <button
+              onClick={() => setIsCreateProductOpen(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-600/20"
+            >
+              <Plus className="w-4 h-4" /> Create Product / Module
+            </button>
+          )}
 
           <button
             onClick={() => setSelectedProductForTemplates(products[0])}
@@ -373,6 +384,15 @@ export const ProductsManagementView: React.FC<Props> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Create Product Modal (Super Admin Only) */}
+      {isCreateProductOpen && (
+        <CreateProductModal
+          isOpen={isCreateProductOpen}
+          onClose={() => setIsCreateProductOpen(false)}
+          onProductCreated={onRefresh}
+        />
       )}
 
       {/* Visual Template Builder Modal (For New Template) */}
