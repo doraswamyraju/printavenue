@@ -43,22 +43,27 @@ export interface DesignTemplate {
     shape?: 'rect' | 'circle';
     borderRadius?: number;
   };
-  // Styled Text Slot (e.g. Company Name / Personal Greeting)
-  textSlot?: {
-    enabled: boolean;
-    label?: string; // e.g. "Company Name", "Your Family Name"
-    placeholder?: string;
-    defaultText?: string;
-    x: number; // percentage (0-100)
-    y: number; // percentage (0-100)
-    width?: number; // percentage width
-    fontSize?: number; // base font size in px (relative to 1000px canvas)
-    fontFamily?: 'sans' | 'serif' | 'mono' | 'handwriting';
-    fontColor?: string; // hex color e.g. #1e293b
-    fontWeight?: 'normal' | 'bold' | 'extrabold';
-    textAlign?: 'left' | 'center' | 'right';
-    maxChars?: number;
-  };
+  // Multiple Styled Text Slots (e.g. Company Name, Tagline, Phone/Website, Greeting)
+  textSlots?: TextSlotDefinition[];
+  // Legacy single slot support
+  textSlot?: TextSlotDefinition;
+}
+
+export interface TextSlotDefinition {
+  id: string; // e.g. "text-1", "text-tagline"
+  enabled: boolean;
+  label: string; // e.g. "Company Name", "Tagline / Slogan", "Phone / Website"
+  placeholder?: string;
+  defaultText?: string;
+  x: number; // percentage (0-100)
+  y: number; // percentage (0-100)
+  width?: number; // percentage width
+  fontSize?: number; // font size in px
+  fontFamily?: string; // e.g. "Montserrat", "Playfair Display", "Great Vibes", "Poppins", "Cinzel", "Pacifico", "Oswald", "Lora", "Roboto Mono", "Inter"
+  fontColor?: string; // hex color e.g. #1e293b
+  fontWeight?: 'normal' | 'bold' | 'extrabold';
+  textAlign?: 'left' | 'center' | 'right';
+  maxChars?: number;
 }
 
 export interface SheetDefinition {
@@ -138,6 +143,7 @@ export interface Order {
     logoBase64?: string;
     brandName?: string;
     contactInfo?: string;
+    textInputs?: Record<string, string>; // keyed by TextSlotDefinition id e.g. { "text-1": "Acme Corp", "text-tagline": "Quality Matters" }
   };
   sheets: CustomizedSheetItem[];
 }

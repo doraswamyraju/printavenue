@@ -45,6 +45,7 @@ export const StudioView: React.FC<Props> = ({
   // Global Fixed Branding Variables (Applied across all sheets)
   const [globalLogoBase64, setGlobalLogoBase64] = useState<string>('');
   const [globalBrandName, setGlobalBrandName] = useState<string>('');
+  const [globalTextInputs, setGlobalTextInputs] = useState<Record<string, string>>({});
   const [showGlobalSettings, setShowGlobalSettings] = useState<boolean>(true);
 
   // Sheet states
@@ -120,6 +121,7 @@ export const StudioView: React.FC<Props> = ({
             userImageBase64: item.userImageBase64,
             globalLogoBase64: globalLogoBase64,
             globalBrandName: globalBrandName,
+            globalTextInputs: globalTextInputs,
             caption: item.customText,
             targetWidth: 2480, // A5 300 DPI high resolution
             aspectRatio: parseFloat(sheet.aspectRatio) || 1.414,
@@ -153,6 +155,7 @@ export const StudioView: React.FC<Props> = ({
         globalVariables: {
           logoBase64: globalLogoBase64,
           brandName: globalBrandName,
+          textInputs: globalTextInputs,
         },
         sheets: finalizedSheets,
       };
@@ -243,7 +246,7 @@ export const StudioView: React.FC<Props> = ({
           </div>
 
           {showGlobalSettings && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
               {/* Global Logo Upload */}
               <div className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                 <div className="w-12 h-12 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
@@ -256,7 +259,7 @@ export const StudioView: React.FC<Props> = ({
                 </div>
                 <div className="flex-1">
                   <span className="text-[11px] font-bold text-slate-300 block mb-1">
-                    Corporate / Brand Logo (PNG / JPG):
+                    Brand Logo (PNG / JPG):
                   </span>
                   <label className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded-lg text-xs font-bold cursor-pointer transition">
                     <Upload className="w-3 h-3" />
@@ -278,19 +281,58 @@ export const StudioView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Global Company / Family Name */}
-              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-300 block mb-1">
-                  Company Name / Brand / Family Title:
-                </span>
-                <input
-                  type="text"
-                  value={globalBrandName}
-                  onChange={(e) => setGlobalBrandName(e.target.value)}
-                  placeholder="e.g. Acme Innovations Pvt Ltd"
-                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-bold focus:ring-1 focus:ring-cyan-500"
-                />
-              </div>
+              {/* Dynamic Styled Text Input Fields (Discovered from Active Template or fallback) */}
+              {(() => {
+                const slots = activeTemplate?.textSlots || (activeTemplate?.textSlot ? [activeTemplate.textSlot] : []);
+                if (slots.length === 0) {
+                  return (
+                    <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
+                      <span className="text-[11px] font-bold text-slate-300 block mb-1">
+                        Company Name / Title:
+                      </span>
+                      <input
+                        type="text"
+                        value={globalBrandName}
+                        onChange={(e) => setGlobalBrandName(e.target.value)}
+                        placeholder="e.g. Acme Innovations Pvt Ltd"
+                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-bold focus:ring-1 focus:ring-cyan-500"
+                      />
+                    </div>
+                  );
+                }
+
+                return slots.map((slot, sIdx) => {
+                  const currentValue = globalTextInputs[slot.id] !== undefined
+                    ? globalTextInputs[slot.id]
+                    : (slot.id === 'text-1' && globalBrandName ? globalBrandName : slot.defaultText || '');
+
+                  return (
+                    <div key={slot.id} className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="text-[11px] font-bold text-slate-300">
+                          {slot.label || `Text Input #${sIdx + 1}`}:
+                        </span>
+                        <span className="text-[9px] font-mono text-pink-400">
+                          {slot.fontFamily}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={currentValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setGlobalTextInputs((prev) => ({ ...prev, [slot.id]: val }));
+                          if (slot.id === 'text-1' || sIdx === 0) {
+                            setGlobalBrandName(val);
+                          }
+                        }}
+                        placeholder={slot.placeholder || 'Enter text here...'}
+                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-bold focus:ring-1 focus:ring-pink-500"
+                      />
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
@@ -336,6 +378,7 @@ export const StudioView: React.FC<Props> = ({
                   customText={currentSheetItem.customText}
                   globalLogo={globalLogoBase64}
                   globalBrandName={globalBrandName}
+                  globalTextInputs={globalTextInputs}
                   aspectRatio={currentSheet.aspectRatio}
                 />
               </CalendarMockupFrame>
@@ -444,6 +487,7 @@ export const StudioView: React.FC<Props> = ({
                           customText={currentSheetItem.customText}
                           globalLogo={globalLogoBase64}
                           globalBrandName={globalBrandName}
+                          globalTextInputs={globalTextInputs}
                           aspectRatio={currentSheet.aspectRatio}
                           className="scale-95 origin-center shadow-none border-none"
                         />
@@ -572,6 +616,7 @@ export const StudioView: React.FC<Props> = ({
                           customText={currentSheetItem.customText}
                           globalLogo={globalLogoBase64}
                           globalBrandName={globalBrandName}
+                          globalTextInputs={globalTextInputs}
                           aspectRatio={currentSheet.aspectRatio}
                           className="w-full"
                         />

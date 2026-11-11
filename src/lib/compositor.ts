@@ -1,5 +1,6 @@
 import { DesignTemplate } from '@/types';
 import { getMonthMatrix, MONTH_NAMES, DAYS_SHORT } from '@/lib/calendar';
+import { getFontFamilyCss } from '@/lib/fonts';
 
 /**
  * Client-side High-Resolution Flat Composite Generator
@@ -19,6 +20,7 @@ export async function composePrintReadySheet({
   userImageBase64,
   globalLogoBase64,
   globalBrandName,
+  globalTextInputs = {},
   caption,
   targetWidth = 2480, // A5 300 DPI Landscape width (2480 x 1748)
   aspectRatio = 1.414,
@@ -29,6 +31,7 @@ export async function composePrintReadySheet({
   userImageBase64?: string;
   globalLogoBase64?: string;
   globalBrandName?: string;
+  globalTextInputs?: Record<string, string>;
   caption?: string;
   targetWidth?: number;
   aspectRatio?: number;
@@ -229,29 +232,30 @@ export async function composePrintReadySheet({
     }
   }
 
-  // 5. Draw Fixed Brand / Company Name
-  if (template.textSlot?.enabled) {
-    const text = globalBrandName || template.textSlot.defaultText || '';
+  // 5. Draw Multiple Fixed / Styled Brand Text Slots
+  const slots = template.textSlots || (template.textSlot ? [template.textSlot] : []);
+  for (const slot of slots) {
+    if (!slot.enabled) continue;
+    const text =
+      globalTextInputs[slot.id] ||
+      (slot.id === 'default-name' || !template.textSlots ? globalBrandName : '') ||
+      slot.defaultText ||
+      slot.placeholder ||
+      '';
+
     if (text) {
-      const tX = (template.textSlot.x / 100) * width;
-      const tY = (template.textSlot.y / 100) * height;
-      const baseSize = template.textSlot.fontSize || 16;
+      const tX = (slot.x / 100) * width;
+      const tY = (slot.y / 100) * height;
+      const baseSize = slot.fontSize || 16;
       const scaledFontSize = Math.round((baseSize / 500) * width);
 
       ctx.save();
-      const weight = template.textSlot.fontWeight || 'bold';
-      const family =
-        template.textSlot.fontFamily === 'serif'
-          ? 'Georgia, serif'
-          : template.textSlot.fontFamily === 'mono'
-          ? 'Courier New, monospace'
-          : template.textSlot.fontFamily === 'handwriting'
-          ? 'cursive'
-          : 'Inter, sans-serif';
+      const weight = slot.fontWeight || 'bold';
+      const family = getFontFamilyCss(slot.fontFamily);
 
       ctx.font = `${weight} ${scaledFontSize}px ${family}`;
-      ctx.fillStyle = template.textSlot.fontColor || '#1e293b';
-      ctx.textAlign = template.textSlot.textAlign || 'left';
+      ctx.fillStyle = slot.fontColor || '#1e293b';
+      ctx.textAlign = (slot.textAlign as CanvasTextAlign) || 'left';
       ctx.fillText(text, tX, tY);
       ctx.restore();
     }

@@ -3,6 +3,7 @@
 import React from 'react';
 import { DesignTemplate } from '@/types';
 import { getMonthMatrix, MONTH_NAMES, DAYS_SHORT } from '@/lib/calendar';
+import { getFontFamilyCss } from '@/lib/fonts';
 
 interface Props {
   template: DesignTemplate;
@@ -13,6 +14,7 @@ interface Props {
   customText?: string;
   globalLogo?: string;
   globalBrandName?: string;
+  globalTextInputs?: Record<string, string>;
   interactive?: boolean;
   aspectRatio?: string; // e.g. "1.414" or "0.707"
   className?: string;
@@ -27,6 +29,7 @@ export const SheetRenderer: React.FC<Props> = ({
   customText,
   globalLogo,
   globalBrandName,
+  globalTextInputs = {},
   aspectRatio = '1.414',
   className = '',
   id,
@@ -211,37 +214,45 @@ export const SheetRenderer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 6. Fixed or Styled Brand / Customer Text */}
-      {template.textSlot?.enabled && (
-        <div
-          className="absolute z-20 pointer-events-none transition-all"
-          style={{
-            left: `${template.textSlot.x}%`,
-            top: `${template.textSlot.y}%`,
-            width: template.textSlot.width ? `${template.textSlot.width}%` : 'auto',
-            textAlign: template.textSlot.textAlign || 'left',
-          }}
-        >
-          <span
-            style={{
-              color: template.textSlot.fontColor || '#1e293b',
-              fontSize: `${template.textSlot.fontSize || 13}px`,
-              fontFamily:
-                template.textSlot.fontFamily === 'serif'
-                  ? 'Georgia, serif'
-                  : template.textSlot.fontFamily === 'mono'
-                  ? 'Courier New, monospace'
-                  : template.textSlot.fontFamily === 'handwriting'
-                  ? 'cursive'
-                  : 'Inter, system-ui, sans-serif',
-              fontWeight: template.textSlot.fontWeight || 'bold',
-            }}
-            className="tracking-tight leading-tight block drop-shadow-sm"
-          >
-            {globalBrandName || template.textSlot.defaultText || template.textSlot.placeholder || 'Company / Brand Name'}
-          </span>
-        </div>
-      )}
+      {/* 6. Multiple Fixed or Styled Brand / Customer Text Slots */}
+      {(() => {
+        const slots = template.textSlots || (template.textSlot ? [template.textSlot] : []);
+        return slots.filter((s) => s.enabled).map((slot) => {
+          const textValue =
+            globalTextInputs[slot.id] ||
+            (slot.id === 'default-name' || !template.textSlots ? globalBrandName : '') ||
+            slot.defaultText ||
+            slot.placeholder ||
+            slot.label;
+
+          const fontFamilyCss = getFontFamilyCss(slot.fontFamily);
+
+          return (
+            <div
+              key={slot.id}
+              className="absolute z-20 pointer-events-none transition-all"
+              style={{
+                left: `${slot.x}%`,
+                top: `${slot.y}%`,
+                width: slot.width ? `${slot.width}%` : 'auto',
+                textAlign: slot.textAlign || 'left',
+              }}
+            >
+              <span
+                style={{
+                  color: slot.fontColor || '#1e293b',
+                  fontSize: `${slot.fontSize || 13}px`,
+                  fontFamily: fontFamilyCss,
+                  fontWeight: slot.fontWeight || 'bold',
+                }}
+                className="tracking-tight leading-tight block drop-shadow-sm select-none"
+              >
+                {textValue}
+              </span>
+            </div>
+          );
+        });
+      })()}
 
       {/* 7. Sheet-Specific Caption / Subtitle */}
       {!isCover && customText && (
