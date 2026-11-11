@@ -104,6 +104,32 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   const [layerPosition, setLayerPosition] = useState<'under-artwork' | 'over-artwork'>('under-artwork');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Logo Slot Configuration
+  const [logoEnabled, setLogoEnabled] = useState<boolean>(initialTemplate?.logoSlot?.enabled || false);
+  const [logoX, setLogoX] = useState<number>(initialTemplate?.logoSlot?.x || 5);
+  const [logoY, setLogoY] = useState<number>(initialTemplate?.logoSlot?.y || 5);
+  const [logoW, setLogoW] = useState<number>(initialTemplate?.logoSlot?.width || 12);
+  const [logoH, setLogoH] = useState<number>(initialTemplate?.logoSlot?.height || 12);
+  const [logoShape, setLogoShape] = useState<'rect' | 'circle'>(initialTemplate?.logoSlot?.shape || 'rect');
+
+  // Text Slot Configuration
+  const [textEnabled, setTextEnabled] = useState<boolean>(initialTemplate?.textSlot?.enabled || false);
+  const [textX, setTextX] = useState<number>(initialTemplate?.textSlot?.x || 5);
+  const [textY, setTextY] = useState<number>(initialTemplate?.textSlot?.y || 92);
+  const [textLabel, setTextLabel] = useState<string>(initialTemplate?.textSlot?.label || 'Company Name');
+  const [textPlaceholder, setTextPlaceholder] = useState<string>(initialTemplate?.textSlot?.placeholder || 'e.g. Acme Corp');
+  const [textFontSize, setTextFontSize] = useState<number>(initialTemplate?.textSlot?.fontSize || 16);
+  const [textFontFamily, setTextFontFamily] = useState<'sans' | 'serif' | 'mono' | 'handwriting'>(
+    initialTemplate?.textSlot?.fontFamily || 'sans'
+  );
+  const [textFontColor, setTextFontColor] = useState<string>(initialTemplate?.textSlot?.fontColor || '#1e293b');
+  const [textFontWeight, setTextFontWeight] = useState<'normal' | 'bold' | 'extrabold'>(
+    initialTemplate?.textSlot?.fontWeight || 'bold'
+  );
+  const [textAlignment, setTextAlignment] = useState<'left' | 'center' | 'right'>(
+    initialTemplate?.textSlot?.textAlign || 'left'
+  );
+
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
   const sampleCustomerPhoto =
@@ -298,6 +324,31 @@ export const TemplateBuilderModal: React.FC<Props> = ({
           type: artworkImage ? 'image' : 'color',
           value: artworkImage || '#FFFFFF',
         },
+        logoSlot: logoEnabled
+          ? {
+              enabled: true,
+              label: 'Brand Logo',
+              x: logoX,
+              y: logoY,
+              width: logoW,
+              height: logoH,
+              shape: logoShape,
+            }
+          : undefined,
+        textSlot: textEnabled
+          ? {
+              enabled: true,
+              label: textLabel,
+              placeholder: textPlaceholder,
+              x: textX,
+              y: textY,
+              fontSize: textFontSize,
+              fontFamily: textFontFamily,
+              fontColor: textFontColor,
+              fontWeight: textFontWeight,
+              textAlign: textAlignment,
+            }
+          : undefined,
       };
 
       for (const prodId of selectedProductIds) {
@@ -451,6 +502,53 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   className="w-full h-full object-cover"
                 />
               </div>
+
+              {/* Real-time Visualizer of Logo Slot (if enabled) */}
+              {logoEnabled && (
+                <div
+                  className="absolute z-20 border-2 border-dashed border-cyan-400 bg-cyan-500/20 flex flex-col items-center justify-center p-1 text-cyan-200 shadow-md pointer-events-none transition-all"
+                  style={{
+                    left: `${logoX}%`,
+                    top: `${logoY}%`,
+                    width: `${logoW}%`,
+                    height: `${logoH}%`,
+                    borderRadius: logoShape === 'circle' ? '50%' : '6px',
+                  }}
+                >
+                  <span className="text-[9px] font-black tracking-wider uppercase">LOGO</span>
+                </div>
+              )}
+
+              {/* Real-time Visualizer of Text Slot (if enabled) */}
+              {textEnabled && (
+                <div
+                  className="absolute z-20 pointer-events-none transition-all"
+                  style={{
+                    left: `${textX}%`,
+                    top: `${textY}%`,
+                    textAlign: textAlignment,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: textFontColor,
+                      fontSize: `${textFontSize}px`,
+                      fontFamily:
+                        textFontFamily === 'serif'
+                          ? 'Georgia, serif'
+                          : textFontFamily === 'mono'
+                          ? 'Courier New, monospace'
+                          : textFontFamily === 'handwriting'
+                          ? 'cursive'
+                          : 'Inter, sans-serif',
+                      fontWeight: textFontWeight,
+                    }}
+                    className="drop-shadow-md select-none whitespace-nowrap block"
+                  >
+                    {textLabel || 'Company Name'}
+                  </span>
+                </div>
+              )}
 
               {/* Polygon Outline SVG & Draggable Surface */}
               <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none">
@@ -740,6 +838,189 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Step 2B: Logo Slot Setup */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs uppercase tracking-wider text-cyan-400 block">
+                  Fixed Logo Slot (Brand)
+                </span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={logoEnabled}
+                    onChange={(e) => setLogoEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-cyan-500"
+                  />
+                  <span>Enable</span>
+                </label>
+              </div>
+
+              {logoEnabled && (
+                <div className="space-y-2 pt-2 border-t border-slate-800 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">X Position (%):</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="90"
+                        value={logoX}
+                        onChange={(e) => setLogoX(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Y Position (%):</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="90"
+                        value={logoY}
+                        onChange={(e) => setLogoY(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Width (%):</span>
+                      <input
+                        type="number"
+                        min="4"
+                        max="50"
+                        value={logoW}
+                        onChange={(e) => setLogoW(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Shape:</span>
+                      <select
+                        value={logoShape}
+                        onChange={(e) => setLogoShape(e.target.value as 'rect' | 'circle')}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      >
+                        <option value="rect">Rectangle / Square</option>
+                        <option value="circle">Circle</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Step 2C: Styled Text Slot (Company Name / Personal Name) */}
+            <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs uppercase tracking-wider text-pink-400 block">
+                  Fixed Text Slot (Company / Name)
+                </span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={textEnabled}
+                    onChange={(e) => setTextEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-pink-500"
+                  />
+                  <span>Enable</span>
+                </label>
+              </div>
+
+              {textEnabled && (
+                <div className="space-y-2.5 pt-2 border-t border-slate-800 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-semibold block text-[10px]">Label for Customer:</span>
+                    <input
+                      type="text"
+                      value={textLabel}
+                      onChange={(e) => setTextLabel(e.target.value)}
+                      placeholder="e.g. Company Name"
+                      className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">X Position (%):</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="90"
+                        value={textX}
+                        onChange={(e) => setTextX(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Y Position (%):</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="95"
+                        value={textY}
+                        onChange={(e) => setTextY(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Font Family:</span>
+                      <select
+                        value={textFontFamily}
+                        onChange={(e) => setTextFontFamily(e.target.value as any)}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      >
+                        <option value="sans">Modern Sans (Inter)</option>
+                        <option value="serif">Classic Serif (Georgia)</option>
+                        <option value="mono">Monospace (Code)</option>
+                        <option value="handwriting">Cursive / Signature</option>
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Font Size (px):</span>
+                      <input
+                        type="number"
+                        min="10"
+                        max="48"
+                        value={textFontSize}
+                        onChange={(e) => setTextFontSize(Number(e.target.value))}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Font Color:</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={textFontColor}
+                          onChange={(e) => setTextFontColor(e.target.value)}
+                          className="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer"
+                        />
+                        <span className="font-mono text-[10px] text-slate-300">{textFontColor}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-semibold block text-[10px]">Alignment:</span>
+                      <select
+                        value={textAlignment}
+                        onChange={(e) => setTextAlignment(e.target.value as any)}
+                        className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-bold"
+                      >
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Step 3: Available In Products */}

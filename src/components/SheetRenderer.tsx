@@ -11,9 +11,12 @@ interface Props {
   sheetTitle?: string;
   userImage?: string;
   customText?: string;
+  globalLogo?: string;
+  globalBrandName?: string;
   interactive?: boolean;
   aspectRatio?: string; // e.g. "1.414" or "0.707"
   className?: string;
+  id?: string;
 }
 
 export const SheetRenderer: React.FC<Props> = ({
@@ -22,8 +25,11 @@ export const SheetRenderer: React.FC<Props> = ({
   monthIndices = [],
   userImage,
   customText,
+  globalLogo,
+  globalBrandName,
   aspectRatio = '1.414',
   className = '',
+  id,
 }) => {
   const isCover = !monthIndices || monthIndices.length === 0;
   const isGraphicArtwork = template.background.type === 'image';
@@ -178,7 +184,66 @@ export const SheetRenderer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 5. Custom Text Overlay (Optional) */}
+      {/* 5. Fixed Global Logo (Brand / Company Logo) */}
+      {template.logoSlot?.enabled && (
+        <div
+          className="absolute z-20 overflow-hidden flex items-center justify-center pointer-events-none transition-all"
+          style={{
+            left: `${template.logoSlot.x}%`,
+            top: `${template.logoSlot.y}%`,
+            width: `${template.logoSlot.width}%`,
+            height: `${template.logoSlot.height}%`,
+            borderRadius: template.logoSlot.shape === 'circle' ? '50%' : `${template.logoSlot.borderRadius || 4}px`,
+          }}
+        >
+          {globalLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={globalLogo}
+              alt="Brand Logo"
+              className="w-full h-full object-contain pointer-events-none"
+            />
+          ) : (
+            <div className="w-full h-full border border-dashed border-blue-400 bg-blue-500/10 rounded flex items-center justify-center p-1 text-blue-500 text-[9px] font-bold">
+              <span>LOGO</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 6. Fixed or Styled Brand / Customer Text */}
+      {template.textSlot?.enabled && (
+        <div
+          className="absolute z-20 pointer-events-none transition-all"
+          style={{
+            left: `${template.textSlot.x}%`,
+            top: `${template.textSlot.y}%`,
+            width: template.textSlot.width ? `${template.textSlot.width}%` : 'auto',
+            textAlign: template.textSlot.textAlign || 'left',
+          }}
+        >
+          <span
+            style={{
+              color: template.textSlot.fontColor || '#1e293b',
+              fontSize: `${template.textSlot.fontSize || 13}px`,
+              fontFamily:
+                template.textSlot.fontFamily === 'serif'
+                  ? 'Georgia, serif'
+                  : template.textSlot.fontFamily === 'mono'
+                  ? 'Courier New, monospace'
+                  : template.textSlot.fontFamily === 'handwriting'
+                  ? 'cursive'
+                  : 'Inter, system-ui, sans-serif',
+              fontWeight: template.textSlot.fontWeight || 'bold',
+            }}
+            className="tracking-tight leading-tight block drop-shadow-sm"
+          >
+            {globalBrandName || template.textSlot.defaultText || template.textSlot.placeholder || 'Company / Brand Name'}
+          </span>
+        </div>
+      )}
+
+      {/* 7. Sheet-Specific Caption / Subtitle */}
       {!isCover && customText && (
         <div
           className="absolute z-20 text-center px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm shadow pointer-events-none"

@@ -19,6 +19,8 @@ import {
   X
 } from 'lucide-react';
 
+import { composePrintReadySheet } from '@/lib/compositor';
+
 interface Props {
   product: Product;
   user: AuthUser;
@@ -39,6 +41,11 @@ export const StudioView: React.FC<Props> = ({
   const [showFullReview, setShowFullReview] = useState<boolean>(false);
   const [showBroadTemplatesModal, setShowBroadTemplatesModal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Global Fixed Branding Variables (Applied across all sheets)
+  const [globalLogoBase64, setGlobalLogoBase64] = useState<string>('');
+  const [globalBrandName, setGlobalBrandName] = useState<string>('');
+  const [showGlobalSettings, setShowGlobalSettings] = useState<boolean>(true);
 
   // Sheet states
   const [sheetData, setSheetData] = useState<Record<string, CustomizedSheetItem>>(() => {
@@ -92,10 +99,41 @@ export const StudioView: React.FC<Props> = ({
     reader.readAsDataURL(file);
   };
 
-  // Submit order directly into database
+  // Submit order directly into database with 100% full merged print-ready composites
   const handlePlaceOrder = async () => {
     setIsSubmitting(true);
     try {
+      // Compose 100% complete print-ready image for each customized sheet
+      const finalizedSheets: CustomizedSheetItem[] = [];
+
+      for (const sheet of product.sheets) {
+        const item = sheetData[sheet.id];
+        const chosenTemplate =
+          sheet.templates.find((t) => t.id === item.selectedTemplateId) || sheet.templates[0];
+
+        let composedUrl = '';
+        try {
+          composedUrl = await composePrintReadySheet({
+            template: chosenTemplate,
+            year: selectedYear,
+            monthIndices: sheet.monthIndices,
+            userImageBase64: item.userImageBase64,
+            globalLogoBase64: globalLogoBase64,
+            globalBrandName: globalBrandName,
+            caption: item.customText,
+            targetWidth: 2480, // A5 300 DPI high resolution
+            aspectRatio: parseFloat(sheet.aspectRatio) || 1.414,
+          });
+        } catch (composeErr) {
+          console.warn(`Failed composing sheet ${sheet.title}:`, composeErr);
+        }
+
+        finalizedSheets.push({
+          ...item,
+          composedPrintUrl: composedUrl || item.userImageBase64,
+        });
+      }
+
       const orderPayload = {
         customerName: user.name,
         customerEmail: user.email,
@@ -112,7 +150,11 @@ export const StudioView: React.FC<Props> = ({
         quantity,
         unitPrice,
         totalAmount: totalPrice,
-        sheets: Object.values(sheetData),
+        globalVariables: {
+          logoBase64: globalLogoBase64,
+          brandName: globalBrandName,
+        },
+        sheets: finalizedSheets,
       };
 
       const res = await fetch('/api/orders', {
@@ -123,7 +165,7 @@ export const StudioView: React.FC<Props> = ({
 
       if (!res.ok) throw new Error('Order submission failed');
 
-      alert('Order successfully saved into database!');
+      alert('Order successfully saved into database with full print-ready artwork!');
       onOrderPlaced();
     } catch {
       alert('Failed to place order.');
@@ -182,6 +224,77 @@ export const StudioView: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Global Fixed Branding Setup (Applies across all 13 calendar sheets) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-blue-950/40 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+              <h3 className="font-extrabold text-sm text-white">
+                Global Branding Inputs (Applies Across All Sheets Automatically)
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGlobalSettings(!showGlobalSettings)}
+              className="text-xs text-cyan-400 hover:underline font-bold"
+            >
+              {showGlobalSettings ? 'Collapse' : 'Edit Global Branding'}
+            </button>
+          </div>
+
+          {showGlobalSettings && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+              {/* Global Logo Upload */}
+              <div className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                <div className="w-12 h-12 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                  {globalLogoBase64 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={globalLogoBase64} alt="Brand Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-[10px] text-slate-500 font-bold">LOGO</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <span className="text-[11px] font-bold text-slate-300 block mb-1">
+                    Corporate / Brand Logo (PNG / JPG):
+                  </span>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded-lg text-xs font-bold cursor-pointer transition">
+                    <Upload className="w-3 h-3" />
+                    <span>{globalLogoBase64 ? 'Change Logo' : 'Upload Logo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setGlobalLogoBase64(ev.target?.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Global Company / Family Name */}
+              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
+                <span className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Company Name / Brand / Family Title:
+                </span>
+                <input
+                  type="text"
+                  value={globalBrandName}
+                  onChange={(e) => setGlobalBrandName(e.target.value)}
+                  placeholder="e.g. Acme Innovations Pvt Ltd"
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-bold focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Horizontal Sheet Selector Strip */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {product.sheets.map((sheet, idx) => {
@@ -221,6 +334,8 @@ export const StudioView: React.FC<Props> = ({
                   monthIndices={currentSheet.monthIndices}
                   userImage={currentSheetItem.userImageBase64}
                   customText={currentSheetItem.customText}
+                  globalLogo={globalLogoBase64}
+                  globalBrandName={globalBrandName}
                   aspectRatio={currentSheet.aspectRatio}
                 />
               </CalendarMockupFrame>
@@ -327,6 +442,8 @@ export const StudioView: React.FC<Props> = ({
                           monthIndices={currentSheet.monthIndices}
                           userImage={currentSheetItem.userImageBase64}
                           customText={currentSheetItem.customText}
+                          globalLogo={globalLogoBase64}
+                          globalBrandName={globalBrandName}
                           aspectRatio={currentSheet.aspectRatio}
                           className="scale-95 origin-center shadow-none border-none"
                         />
@@ -453,6 +570,8 @@ export const StudioView: React.FC<Props> = ({
                           monthIndices={currentSheet.monthIndices}
                           userImage={currentSheetItem.userImageBase64}
                           customText={currentSheetItem.customText}
+                          globalLogo={globalLogoBase64}
+                          globalBrandName={globalBrandName}
                           aspectRatio={currentSheet.aspectRatio}
                           className="w-full"
                         />

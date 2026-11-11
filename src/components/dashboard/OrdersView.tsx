@@ -73,13 +73,45 @@ export const OrdersView: React.FC<Props> = ({ orders, user, onRefresh }) => {
     }
   };
 
+  // Download 100% full merged print-ready sheet (Base Artwork + Cutout Photo + Logo + Text)
+  const handleDownloadCompleteSheet = (sheet: any, idx: number, orderId: string) => {
+    const downloadUrl = sheet.composedPrintUrl || sheet.userImageBase64;
+    if (!downloadUrl) {
+      alert('No artwork file found for this sheet.');
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${orderId}-READY_TO_PRINT-Sheet_${idx + 1}_${sheet.sheetTitle.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Download all ready-to-print sheets
+  const handleDownloadAllPrintFiles = (order: Order) => {
+    order.sheets.forEach((sheet, idx) => {
+      const url = sheet.composedPrintUrl || sheet.userImageBase64;
+      if (url) {
+        setTimeout(() => {
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${order.id}-READY_TO_PRINT-Sheet_${idx + 1}_${sheet.sheetTitle.replace(/\s+/g, '_')}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }, idx * 350);
+      }
+    });
+  };
+
   // HD raw download for press
   const handleDownloadPhotos = (order: Order) => {
     order.sheets.forEach((sheet, idx) => {
       if (sheet.userImageBase64) {
         const link = document.createElement('a');
         link.href = sheet.userImageBase64;
-        link.download = `${order.id}-sheet-${idx + 1}-${sheet.sheetTitle.replace(/\s+/g, '_')}.png`;
+        link.download = `${order.id}-raw-photo-${idx + 1}-${sheet.sheetTitle.replace(/\s+/g, '_')}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -184,13 +216,25 @@ export const OrdersView: React.FC<Props> = ({ orders, user, onRefresh }) => {
                 </div>
 
                 {isStaff && (
-                  <button
-                    onClick={() => handleDownloadPhotos(selectedOrder)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Download HD Raw Photos
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownloadAllPrintFiles(selectedOrder)}
+                      className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/20"
+                      title="Download complete merged print artwork for all sheets in this order"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download Complete Print Files (All Sheets)
+                    </button>
+
+                    <button
+                      onClick={() => handleDownloadPhotos(selectedOrder)}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center gap-1.5 border border-slate-700"
+                      title="Download raw customer uploads"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Raw Photos
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -284,10 +328,10 @@ export const OrdersView: React.FC<Props> = ({ orders, user, onRefresh }) => {
                         <span className="font-mono text-slate-500">#{idx + 1}</span>
                       </div>
                       <div className="aspect-[4/3] rounded-lg bg-slate-900 overflow-hidden flex items-center justify-center">
-                        {sheet.userImageBase64 ? (
+                        {sheet.composedPrintUrl || sheet.userImageBase64 ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={sheet.userImageBase64}
+                            src={sheet.composedPrintUrl || sheet.userImageBase64}
                             alt={sheet.sheetTitle}
                             className="w-full h-full object-cover pointer-events-none select-none"
                           />
@@ -295,10 +339,23 @@ export const OrdersView: React.FC<Props> = ({ orders, user, onRefresh }) => {
                           <span className="text-[10px] text-slate-600">No Image</span>
                         )}
                       </div>
+
                       {sheet.customText && (
                         <p className="text-[10px] text-amber-400 italic truncate">
                           &ldquo;{sheet.customText}&rdquo;
                         </p>
+                      )}
+
+                      {/* Download Print Sheet Button */}
+                      {isStaff && (sheet.composedPrintUrl || sheet.userImageBase64) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadCompleteSheet(sheet, idx, selectedOrder.id)}
+                          className="w-full py-1.5 px-2 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 font-bold text-[10px] flex items-center justify-center gap-1 transition shadow"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Download Print Sheet</span>
+                        </button>
                       )}
                     </div>
                   ))}

@@ -32,6 +32,33 @@ export interface DesignTemplate {
     defaultText?: string;
     position: { x: number; y: number };
   };
+  // Secondary Image Slot (e.g. Logo / Badge / QR)
+  logoSlot?: {
+    enabled: boolean;
+    label?: string; // e.g. "Company Logo", "Brand Icon"
+    x: number; // percentage (0-100)
+    y: number; // percentage (0-100)
+    width: number; // percentage (0-100)
+    height: number; // percentage (0-100)
+    shape?: 'rect' | 'circle';
+    borderRadius?: number;
+  };
+  // Styled Text Slot (e.g. Company Name / Personal Greeting)
+  textSlot?: {
+    enabled: boolean;
+    label?: string; // e.g. "Company Name", "Your Family Name"
+    placeholder?: string;
+    defaultText?: string;
+    x: number; // percentage (0-100)
+    y: number; // percentage (0-100)
+    width?: number; // percentage width
+    fontSize?: number; // base font size in px (relative to 1000px canvas)
+    fontFamily?: 'sans' | 'serif' | 'mono' | 'handwriting';
+    fontColor?: string; // hex color e.g. #1e293b
+    fontWeight?: 'normal' | 'bold' | 'extrabold';
+    textAlign?: 'left' | 'center' | 'right';
+    maxChars?: number;
+  };
 }
 
 export interface SheetDefinition {
@@ -65,9 +92,11 @@ export interface CustomizedSheetItem {
   sheetId: string;
   sheetTitle: string;
   selectedTemplateId: string;
-  userImageBase64?: string; // or url
+  userImageBase64?: string; // primary photo
   originalImageFileName?: string;
+  userLogoBase64?: string; // secondary image / logo
   customText?: string;
+  composedPrintUrl?: string; // 100% full merged print-ready sheet (base artwork + photo + logo + text)
   previewThumbnailUrl?: string; // high-quality generated preview
 }
 
@@ -104,6 +133,12 @@ export interface Order {
   courierName?: string;
   trackingNumber?: string;
   trackingUrl?: string;
+  // Fixed Global Branding (applied across all sheets)
+  globalVariables?: {
+    logoBase64?: string;
+    brandName?: string;
+    contactInfo?: string;
+  };
   sheets: CustomizedSheetItem[];
 }
 
