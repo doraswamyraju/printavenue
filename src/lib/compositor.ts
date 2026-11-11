@@ -67,10 +67,6 @@ export async function composePrintReadySheet({
     if (!userImageBase64) return;
     try {
       const photoImg = await loadImage(userImageBase64);
-      const slotX = (template.imageLayout.x / 100) * width;
-      const slotY = (template.imageLayout.y / 100) * height;
-      const slotW = (template.imageLayout.width / 100) * width;
-      const slotH = (template.imageLayout.height / 100) * height;
 
       ctx.save();
 
@@ -78,12 +74,12 @@ export async function composePrintReadySheet({
       if (template.imageLayout.shapeType === 'polygon' && template.imageLayout.polygonPoints) {
         const rawPoints = template.imageLayout.polygonPoints.split(',');
         const parsedPoints = rawPoints.map((pt) => {
-          const pieces = pt.trim().split(' ');
-          const xPct = parseFloat(pieces[0]) || 0;
-          const yPct = parseFloat(pieces[1]) || 0;
+          const pieces = pt.trim().split(/\s+/);
+          const xVal = parseFloat(pieces[0]) || 0;
+          const yVal = parseFloat(pieces[1]) || 0;
           return {
-            x: slotX + (xPct / 100) * slotW,
-            y: slotY + (yPct / 100) * slotH,
+            x: (xVal / 100) * width,
+            y: (yVal / 100) * height,
           };
         });
 
@@ -97,26 +93,35 @@ export async function composePrintReadySheet({
           ctx.clip();
         }
       } else {
-        // Simple Rectangular clip
+        // Simple Rectangular clip using template.imageLayout
+        const slotX = (template.imageLayout.x / 100) * width;
+        const slotY = (template.imageLayout.y / 100) * height;
+        const slotW = (template.imageLayout.width / 100) * width;
+        const slotH = (template.imageLayout.height / 100) * height;
         ctx.beginPath();
         ctx.rect(slotX, slotY, slotW, slotH);
         ctx.clip();
       }
 
-      // Draw photo with cover scaling inside slot
+      // Draw photo across the bounding box of polygon or slot
+      const boundX = (template.imageLayout.x / 100) * width;
+      const boundY = (template.imageLayout.y / 100) * height;
+      const boundW = (template.imageLayout.width / 100) * width;
+      const boundH = (template.imageLayout.height / 100) * height;
+
       const imgAspect = photoImg.width / photoImg.height;
-      const slotAspect = slotW / slotH;
-      let drawW = slotW;
-      let drawH = slotH;
-      let drawX = slotX;
-      let drawY = slotY;
+      const slotAspect = boundW / boundH;
+      let drawW = boundW;
+      let drawH = boundH;
+      let drawX = boundX;
+      let drawY = boundY;
 
       if (imgAspect > slotAspect) {
-        drawW = slotH * imgAspect;
-        drawX = slotX - (drawW - slotW) / 2;
+        drawW = boundH * imgAspect;
+        drawX = boundX - (drawW - boundW) / 2;
       } else {
-        drawH = slotW / imgAspect;
-        drawY = slotY - (drawH - slotH) / 2;
+        drawH = boundW / imgAspect;
+        drawY = boundY - (drawH - boundH) / 2;
       }
 
       ctx.drawImage(photoImg, drawX, drawY, drawW, drawH);
@@ -256,6 +261,7 @@ export async function composePrintReadySheet({
       ctx.font = `${weight} ${scaledFontSize}px ${family}`;
       ctx.fillStyle = slot.fontColor || '#1e293b';
       ctx.textAlign = (slot.textAlign as CanvasTextAlign) || 'left';
+      ctx.textBaseline = 'top';
       ctx.fillText(text, tX, tY);
       ctx.restore();
     }

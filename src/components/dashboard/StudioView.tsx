@@ -310,7 +310,7 @@ export const StudioView: React.FC<Props> = ({
                     <div key={slot.id} className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col justify-center">
                       <div className="flex justify-between items-baseline mb-1">
                         <span className="text-[11px] font-bold text-slate-300">
-                          {slot.label || `Text Input #${sIdx + 1}`}:
+                          {slot.label ? `${slot.label}:` : `Text Input #${sIdx + 1}:`}
                         </span>
                         <span className="text-[9px] font-mono text-pink-400">
                           {slot.fontFamily}
@@ -326,7 +326,7 @@ export const StudioView: React.FC<Props> = ({
                             setGlobalBrandName(val);
                           }
                         }}
-                        placeholder={slot.placeholder || 'Enter text here...'}
+                        placeholder={slot.placeholder || slot.label || 'Enter text here...'}
                         className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-bold focus:ring-1 focus:ring-pink-500"
                       />
                     </div>

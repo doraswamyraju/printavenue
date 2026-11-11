@@ -48,31 +48,14 @@ export const SheetRenderer: React.FC<Props> = ({
     >
       {/* 1. User Uploaded Image Slot (Placed at back if layerPosition === 'under-artwork') */}
       <div
-        className={`absolute transition-all overflow-hidden flex items-center justify-center ${
-          isUnderArtwork ? 'z-0' : 'z-20 border border-dashed border-slate-300'
+        className={`absolute inset-0 transition-all overflow-hidden flex items-center justify-center ${
+          isUnderArtwork ? 'z-0' : 'z-20'
         }`}
         style={{
-          left: `${template.imageLayout.x}%`,
-          top: `${template.imageLayout.y}%`,
-          width: `${template.imageLayout.width}%`,
-          height: `${template.imageLayout.height}%`,
-          borderRadius: `${template.imageLayout.borderRadius || 0}px`,
           clipPath:
             template.imageLayout.shapeType === 'polygon' && template.imageLayout.polygonPoints
               ? `polygon(${template.imageLayout.polygonPoints})`
-              : template.imageLayout.shapeType === 'circle'
-              ? 'circle(50% at 50% 50%)'
               : undefined,
-          maskImage:
-            template.imageLayout.shapeType === 'svgMask' && template.imageLayout.maskSvgUrl
-              ? `url(${template.imageLayout.maskSvgUrl})`
-              : undefined,
-          WebkitMaskImage:
-            template.imageLayout.shapeType === 'svgMask' && template.imageLayout.maskSvgUrl
-              ? `url(${template.imageLayout.maskSvgUrl})`
-              : undefined,
-          maskSize: 'cover',
-          WebkitMaskSize: 'cover',
         }}
       >
         {userImage ? (

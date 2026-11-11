@@ -87,14 +87,9 @@ export const TemplateBuilderModal: React.FC<Props> = ({
         const parts = initialTemplate.imageLayout.polygonPoints.split(',');
         const parsed = parts.map((pt) => {
           const [xStr, yStr] = pt.trim().split(/\s+/);
-          const relX = parseFloat(xStr);
-          const relY = parseFloat(yStr);
-          // Convert back to canvas percentages
-          const absX = initialTemplate.imageLayout.x + (relX / 100) * initialTemplate.imageLayout.width;
-          const absY = initialTemplate.imageLayout.y + (relY / 100) * initialTemplate.imageLayout.height;
           return {
-            x: parseFloat(absX.toFixed(1)),
-            y: parseFloat(absY.toFixed(1)),
+            x: parseFloat(parseFloat(xStr).toFixed(1)),
+            y: parseFloat(parseFloat(yStr).toFixed(1)),
           };
         });
         if (parsed.length >= 3) return parsed;
@@ -383,12 +378,9 @@ export const TemplateBuilderModal: React.FC<Props> = ({
       const width = maxX - minX || 50;
       const height = maxY - minY || 50;
 
-      const relativePolygonPoints = points
-        .map((p) => {
-          const relX = ((p.x - minX) / width) * 100;
-          const relY = ((p.y - minY) / height) * 100;
-          return `${relX.toFixed(1)}% ${relY.toFixed(1)}%`;
-        })
+      // Absolute canvas percentages for 1:1 fidelity with full-canvas clipPath
+      const absolutePolygonPoints = points
+        .map((p) => `${p.x.toFixed(1)}% ${p.y.toFixed(1)}%`)
         .join(', ');
 
       const newTemplate: DesignTemplate = {
@@ -403,7 +395,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
           borderRadius: 0,
           objectFit: 'cover',
           shapeType: 'polygon',
-          polygonPoints: relativePolygonPoints,
+          polygonPoints: absolutePolygonPoints,
           layerPosition: layerPosition,
         },
         calendarLayout: {
