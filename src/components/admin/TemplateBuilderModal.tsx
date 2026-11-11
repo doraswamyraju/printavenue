@@ -8,9 +8,13 @@ import {
   Image as ImageIcon,
   Plus,
   Trash2,
-  RotateCcw,
   Move,
-  Info
+  Info,
+  Maximize2,
+  Sliders,
+  RotateCcw,
+  Sparkles,
+  MousePointerClick
 } from 'lucide-react';
 import { Product, DesignTemplate } from '@/types';
 
@@ -35,14 +39,14 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   onSaved,
 }) => {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([product.id]);
-  const [selectedSheetNumber, setSelectedSheetNumber] = useState<number>(6); // Default e.g. July (Sheet 7 / index 6)
+  const [selectedSheetNumber, setSelectedSheetNumber] = useState<number>(6); // Default July (index 6)
   const [templateName, setTemplateName] = useState('');
   const [artworkImage, setArtworkImage] = useState<string>('');
 
-  // Mode: 'polygon' (interactive freeform points) or 'box' (simple rect)
-  const [shapeMode, setShapeMode] = useState<'polygon' | 'rect'>('polygon');
+  // Mode: 'polygon' or 'box'
+  const [editMode, setEditMode] = useState<'polygon' | 'box'>('polygon');
 
-  // Interactive Arbitrary Polygon Points (default to a 5-point shape resembling the cyan zone)
+  // Interactive Polygon Points (Can go from 0% to 100% unrestricted)
   const [points, setPoints] = useState<Point[]>([
     { x: 0, y: 0 },
     { x: 34, y: 0 },
@@ -54,13 +58,20 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   const [activePointIdx, setActivePointIdx] = useState<number | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
 
-  // Simple rect fallback coordinates
-  const [rectLayout, setRectLayout] = useState({
-    x: 0,
-    y: 0,
-    width: 45,
-    height: 76,
-  });
+  // Dragging the whole polygon shape
+  const [isDraggingShape, setIsDraggingShape] = useState(false);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; initialPoints: Point[] } | null>(null);
+
+  // Overall Shape Position & Scale offsets
+  const [shapeOffsetX, setShapeOffsetX] = useState<number>(0);
+  const [shapeOffsetY, setShapeOffsetY] = useState<number>(0);
+  const [shapeScale, setShapeScale] = useState<number>(100);
+
+  // Artwork Opacity (Great for peering behind while tracing)
+  const [artworkOpacity, setArtworkOpacity] = useState<number>(100);
+
+  // Click-to-add anchor point toggle
+  const [clickToAddMode, setClickToAddMode] = useState<boolean>(false);
 
   const [hasArtworkCalendar, setHasArtworkCalendar] = useState<boolean>(true);
   const [layerPosition, setLayerPosition] = useState<'under-artwork' | 'over-artwork'>('under-artwork');
@@ -68,9 +79,61 @@ export const TemplateBuilderModal: React.FC<Props> = ({
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  // Sample customer image to simulate real live clipping
   const sampleCustomerPhoto =
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
+
+  // Global window mouseup and mousemove so dragging never drops when moving cursor fast or outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onWindowMouseMove = (e: MouseEvent) => {
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+
+      // 1. Moving a single Anchor Pin
+      if (draggingIdx !== null) {
+        const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+        const rawY = ((e.clientY - rect.top) / rect.height) * 100;
+
+        // Allow points to hit exact 0% and 100% boundary
+        const clampedX = Math.max(0, Math.min(100, parseFloat(rawX.toFixed(1))));
+        const clampedY = Math.max(0, Math.min(100, parseFloat(rawY.toFixed(1))));
+
+        setPoints((prev) => {
+          const updated = [...prev];
+          updated[draggingIdx] = { x: clampedX, y: clampedY };
+          return updated;
+        });
+      }
+
+      // 2. Dragging the Whole Shape
+      if (isDraggingShape && dragStartRef.current) {
+        const deltaX = ((e.clientX - dragStartRef.current.mouseX) / rect.width) * 100;
+        const deltaY = ((e.clientY - dragStartRef.current.mouseY) / rect.height) * 100;
+
+        setPoints(
+          dragStartRef.current.initialPoints.map((p) => ({
+            x: Math.max(0, Math.min(100, parseFloat((p.x + deltaX).toFixed(1)))),
+            y: Math.max(0, Math.min(100, parseFloat((p.y + deltaY).toFixed(1)))),
+          }))
+        );
+      }
+    };
+
+    const onWindowMouseUp = () => {
+      setDraggingIdx(null);
+      setIsDraggingShape(false);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener('mousemove', onWindowMouseMove);
+    window.addEventListener('mouseup', onWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', onWindowMouseMove);
+      window.removeEventListener('mouseup', onWindowMouseUp);
+    };
+  }, [draggingIdx, isDraggingShape, isOpen]);
 
   if (!isOpen) return null;
 
@@ -90,47 +153,65 @@ export const TemplateBuilderModal: React.FC<Props> = ({
     reader.readAsDataURL(file);
   };
 
-  // Canvas mouse interactions for dragging polygon vertices
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (draggingIdx === null || !canvasRef.current) return;
+  // Canvas click handler: Click anywhere on artwork to add an anchor pin exactly there!
+  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!clickToAddMode || !canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const clientX = e.clientX;
-    const clientY = e.clientY;
+    const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+    const rawY = ((e.clientY - rect.top) / rect.height) * 100;
 
-    const rawX = ((clientX - rect.left) / rect.width) * 100;
-    const rawY = ((clientY - rect.top) / rect.height) * 100;
-
-    const clampedX = Math.max(0, Math.min(100, parseFloat(rawX.toFixed(1))));
-    const clampedY = Math.max(0, Math.min(100, parseFloat(rawY.toFixed(1))));
-
-    setPoints((prev) => {
-      const updated = [...prev];
-      updated[draggingIdx] = { x: clampedX, y: clampedY };
-      return updated;
-    });
-  };
-
-  const handleCanvasMouseUp = () => {
-    setDraggingIdx(null);
-  };
-
-  // Add a new point near the clicked location or mid-point
-  const handleAddPoint = () => {
-    if (points.length >= 20) return;
-    // Insert new point after active point, or at end
-    const lastPoint = points[points.length - 1];
     const newPoint: Point = {
-      x: Math.min(100, lastPoint.x + 5),
-      y: Math.min(100, lastPoint.y + 5),
+      x: Math.max(0, Math.min(100, parseFloat(rawX.toFixed(1)))),
+      y: Math.max(0, Math.min(100, parseFloat(rawY.toFixed(1)))),
     };
-    setPoints([...points, newPoint]);
+
+    setPoints((prev) => [...prev, newPoint]);
     setActivePointIdx(points.length);
   };
 
-  // Delete selected point (minimum 3 required)
+  // Start dragging the entire shape
+  const startDragWholeShape = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDraggingShape(true);
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      initialPoints: [...points],
+    };
+  };
+
+  // Nudge entire shape horizontally / vertically
+  const nudgeShape = (deltaX: number, deltaY: number) => {
+    setPoints((prev) =>
+      prev.map((p) => ({
+        x: Math.max(0, Math.min(100, parseFloat((p.x + deltaX).toFixed(1)))),
+        y: Math.max(0, Math.min(100, parseFloat((p.y + deltaY).toFixed(1)))),
+      }))
+    );
+  };
+
+  // Scale shape up or down from center
+  const scaleShape = (factor: number) => {
+    const minX = Math.min(...points.map((p) => p.x));
+    const maxX = Math.max(...points.map((p) => p.x));
+    const minY = Math.min(...points.map((p) => p.y));
+    const maxY = Math.max(...points.map((p) => p.y));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    setPoints((prev) =>
+      prev.map((p) => ({
+        x: Math.max(0, Math.min(100, parseFloat((centerX + (p.x - centerX) * factor).toFixed(1)))),
+        y: Math.max(0, Math.min(100, parseFloat((centerY + (p.y - centerY) * factor).toFixed(1)))),
+      }))
+    );
+  };
+
+  // Delete selected point
   const handleDeleteSelectedPoint = () => {
     if (points.length <= 3) {
-      alert('A polygon requires at least 3 points.');
+      alert('A polygon shape requires at least 3 points.');
       return;
     }
     if (activePointIdx !== null) {
@@ -139,53 +220,15 @@ export const TemplateBuilderModal: React.FC<Props> = ({
     }
   };
 
-  // Preset polygon shapes
-  const applyPreset = (preset: 'cyan-corner' | 'slant' | 'hexagon' | 'rectangle') => {
-    if (preset === 'cyan-corner') {
-      // Matches the exact slanted cutout shape from your screenshot!
-      setPoints([
-        { x: 0, y: 0 },
-        { x: 34, y: 0 },
-        { x: 45, y: 38 },
-        { x: 35, y: 76 },
-        { x: 0, y: 76 },
-      ]);
-    } else if (preset === 'slant') {
-      setPoints([
-        { x: 0, y: 0 },
-        { x: 48, y: 0 },
-        { x: 38, y: 100 },
-        { x: 0, y: 100 },
-      ]);
-    } else if (preset === 'hexagon') {
-      setPoints([
-        { x: 25, y: 5 },
-        { x: 75, y: 5 },
-        { x: 95, y: 50 },
-        { x: 75, y: 95 },
-        { x: 25, y: 95 },
-        { x: 5, y: 50 },
-      ]);
-    } else if (preset === 'rectangle') {
-      setPoints([
-        { x: 5, y: 5 },
-        { x: 50, y: 5 },
-        { x: 50, y: 95 },
-        { x: 5, y: 95 },
-      ]);
-    }
-  };
-
   // Save template to database
   const handleSaveTemplate = async () => {
     if (!templateName.trim()) {
-      alert('Please enter a template title (e.g. July Summer Breeze).');
+      alert('Please enter a template title.');
       return;
     }
 
     setIsSaving(true);
     try {
-      // Calculate bounding box encompassing all polygon points
       const minX = Math.min(...points.map((p) => p.x));
       const maxX = Math.max(...points.map((p) => p.x));
       const minY = Math.min(...points.map((p) => p.y));
@@ -194,7 +237,6 @@ export const TemplateBuilderModal: React.FC<Props> = ({
       const width = maxX - minX || 50;
       const height = maxY - minY || 50;
 
-      // Normalize polygon points relative to bounding box (0 - 100%)
       const relativePolygonPoints = points
         .map((p) => {
           const relX = ((p.x - minX) / width) * 100;
@@ -246,7 +288,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
         });
       }
 
-      alert('Complex polygon template successfully saved to database!');
+      alert('Template successfully saved to database!');
       onSaved();
       onClose();
     } catch {
@@ -257,7 +299,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 select-none">
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-7xl w-full max-h-[96vh] flex flex-col overflow-hidden text-slate-100 shadow-2xl">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
@@ -267,10 +309,10 @@ export const TemplateBuilderModal: React.FC<Props> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-base text-white">
-                Interactive Multi-Point Polygon & Artwork Mapper
+                Interactive Multi-Point Vector & Artwork Studio
               </h3>
               <p className="text-xs text-slate-400">
-                Click & drag anchor pins directly on the visualizer to trace any arbitrary non-square shape.
+                Move pins to exact edges, drag the entire shape, or click anywhere on the artwork to drop new pins.
               </p>
             </div>
           </div>
@@ -282,70 +324,83 @@ export const TemplateBuilderModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Studio Workspace */}
+        {/* Studio Content */}
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
-          {/* Left: The Interactive Polygon Canvas (8 cols) */}
+          {/* Left: The Visualizer Canvas (8 cols) */}
           <div className="lg:col-span-8 flex flex-col items-center justify-start bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-3">
-            {/* Toolbar above canvas */}
+            {/* Canvas Toolbar Controls */}
             <div className="w-full flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">
-                  Presets:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => applyPreset('cyan-corner')}
-                  className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold text-[11px]"
-                >
-                  ⚡ Slanted Cutout (Like July)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyPreset('slant')}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-semibold text-[11px]"
-                >
-                  Angle Slant
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyPreset('hexagon')}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 font-semibold text-[11px]"
-                >
-                  Hexagon
-                </button>
-              </div>
-
+              {/* Presets & Click-To-Add Mode */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleAddPoint}
-                  className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow"
+                  onClick={() => setClickToAddMode(!clickToAddMode)}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
+                    clickToAddMode
+                      ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-400 animate-pulse'
+                      : 'bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/40'
+                  }`}
+                  title="When active, clicking anywhere on the image adds an anchor point there"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Add Anchor Pin
+                  <MousePointerClick className="w-4 h-4" />
+                  <span>{clickToAddMode ? 'Click on Artwork to Drop Pin!' : 'Click-to-Add Pin Mode'}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPoints([
+                      { x: 0, y: 0 },
+                      { x: 34, y: 0 },
+                      { x: 45, y: 38 },
+                      { x: 35, y: 76 },
+                      { x: 0, y: 76 },
+                    ])
+                  }
+                  className="px-2.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-bold text-[11px]"
+                >
+                  ⚡ July Slant Preset
+                </button>
+              </div>
+
+              {/* Point Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const last = points[points.length - 1];
+                    setPoints([...points, { x: Math.min(100, last.x + 5), y: Math.min(100, last.y + 5) }]);
+                    setActivePointIdx(points.length);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> + Pin
+                </button>
+
                 <button
                   type="button"
                   onClick={handleDeleteSelectedPoint}
                   disabled={activePointIdx === null || points.length <= 3}
-                  className="px-3 py-1 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 font-bold text-xs flex items-center gap-1 disabled:opacity-30"
+                  className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 font-bold text-xs flex items-center gap-1 disabled:opacity-30"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete Pin
                 </button>
               </div>
             </div>
 
-            {/* The Visualizer Canvas */}
+            {/* The Canvas */}
             <div
               ref={canvasRef}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              onMouseLeave={handleCanvasMouseUp}
-              className="relative w-full rounded-2xl overflow-hidden border border-slate-700 select-none shadow-2xl bg-slate-800"
+              onClick={handleCanvasClick}
+              className={`relative w-full rounded-2xl overflow-hidden border border-slate-700 select-none shadow-2xl bg-slate-800 transition-all ${
+                clickToAddMode ? 'cursor-crosshair' : ''
+              }`}
               style={{
                 aspectRatio: '1.414',
                 backgroundImage: artworkImage ? `url(${artworkImage})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                opacity: artworkOpacity / 100,
               }}
             >
               {!artworkImage && (
@@ -370,18 +425,28 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                 />
               </div>
 
-              {/* Polygon Outline SVG Overlay */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+              {/* Polygon Outline SVG & Draggable Surface */}
+              <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none">
                 <polygon
                   points={points.map((p) => `${p.x}%,${p.y}%`).join(' ')}
-                  fill="rgba(244, 63, 94, 0.15)"
+                  fill="rgba(244, 63, 94, 0.18)"
                   stroke="#F43F5E"
                   strokeWidth="2.5"
                   strokeDasharray="4 3"
                 />
               </svg>
 
-              {/* Draggable Point Handles */}
+              {/* Interactive Move Zone (Click inside shape to drag the entire shape!) */}
+              <div
+                onMouseDown={startDragWholeShape}
+                className="absolute inset-0 z-10 cursor-move"
+                style={{
+                  clipPath: `polygon(${polygonCss})`,
+                }}
+                title="Click and drag anywhere inside this shape to move the entire artwork slot!"
+              />
+
+              {/* Numbered Draggable Anchor Pins (Can move 100% to the edge) */}
               {points.map((p, idx) => {
                 const isSelected = activePointIdx === idx;
                 return (
@@ -392,9 +457,9 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                       setActivePointIdx(idx);
                       setDraggingIdx(idx);
                     }}
-                    className={`absolute z-20 w-5 h-5 -ml-2.5 -mt-2.5 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing font-mono text-[9px] font-bold shadow-xl transition-transform ${
+                    className={`absolute z-30 w-6 h-6 -ml-3 -mt-3 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing font-mono text-[10px] font-extrabold shadow-2xl transition-transform ${
                       isSelected
-                        ? 'bg-rose-500 text-white ring-4 ring-rose-500/50 scale-125'
+                        ? 'bg-rose-500 text-white ring-4 ring-rose-500/60 scale-125'
                         : 'bg-white text-slate-900 border-2 border-rose-600 hover:scale-110'
                     }`}
                     style={{
@@ -408,12 +473,136 @@ export const TemplateBuilderModal: React.FC<Props> = ({
               })}
             </div>
 
-            <div className="w-full p-3 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
-              <Info className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-              <span>
-                <strong>How to use:</strong> Click on any numbered circle (1, 2, 3...) and drag it to align with the border of your artwork. Click <strong>Add Anchor Pin</strong> to add extra corners/curved points!
-              </span>
+            {/* Shape Movement, Scaling & Coordinate Controls */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-900 rounded-2xl border border-slate-800 text-xs">
+              {/* Nudge Controls */}
+              <div className="space-y-1.5">
+                <span className="font-bold text-slate-400 block text-[11px]">
+                  Nudge Entire Shape (X / Y):
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => nudgeShape(-2, 0)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    ◀ Left
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nudgeShape(2, 0)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    Right ▶
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nudgeShape(0, -2)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    ▲ Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nudgeShape(0, 2)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    ▼ Down
+                  </button>
+                </div>
+              </div>
+
+              {/* Resize / Scale Controls */}
+              <div className="space-y-1.5">
+                <span className="font-bold text-slate-400 block text-[11px]">
+                  Resize / Scale Shape:
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => scaleShape(0.95)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    - Reduce (5%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scaleShape(1.05)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  >
+                    + Enlarge (5%)
+                  </button>
+                </div>
+              </div>
+
+              {/* Artwork Trace Opacity */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                  <span>Artwork Opacity:</span>
+                  <span className="text-white">{artworkOpacity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="20"
+                  max="100"
+                  value={artworkOpacity}
+                  onChange={(e) => setArtworkOpacity(Number(e.target.value))}
+                  className="w-full accent-rose-500"
+                />
+              </div>
             </div>
+
+            {/* Selected Point Numeric Coordinates */}
+            {activePointIdx !== null && points[activePointIdx] && (
+              <div className="w-full p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                <span className="font-bold text-rose-400">
+                  Selected Pin #{activePointIdx + 1} Coordinates:
+                </span>
+                <div className="flex items-center gap-4 text-xs font-mono">
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-slate-400 font-sans">X:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={points[activePointIdx].x}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                        setPoints((prev) => {
+                          const u = [...prev];
+                          u[activePointIdx] = { ...u[activePointIdx], x: val };
+                          return u;
+                        });
+                      }}
+                      className="w-16 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-white text-center"
+                    />
+                    <span>%</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-slate-400 font-sans">Y:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={points[activePointIdx].y}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                        setPoints((prev) => {
+                          const u = [...prev];
+                          u[activePointIdx] = { ...u[activePointIdx], y: val };
+                          return u;
+                        });
+                      }}
+                      className="w-16 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-white text-center"
+                    />
+                    <span>%</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right: Controls & Mapping Configuration (4 cols) */}
@@ -483,7 +672,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                     }`}
                   >
                     <div className="text-[10px] font-bold">Above Base Artwork</div>
-                    <div className="text-[8px] text-slate-400 mt-0.5">(Photo placed directly on top)</div>
+                    <div className="text-[8px] text-slate-400 mt-0.5">(Photo placed on top)</div>
                   </button>
                 </div>
               </div>
