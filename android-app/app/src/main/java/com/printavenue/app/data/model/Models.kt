@@ -36,10 +36,19 @@ data class ProductSheet(
 data class DesignTemplate(
     val id: String,
     val name: String,
-    val background: BackgroundData,
-    val imageLayout: ImageLayout,
+    val background: BackgroundData = BackgroundData("color", "#FFFFFF"),
+    val imageLayout: ImageLayout = ImageLayout(),
+    val calendarLayout: CalendarLayout? = null,
     val brandingBadge: BrandingBadge? = null,
     val textSlots: List<TextSlot>? = null
+)
+
+data class CalendarLayout(
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val width: Double = 0.0,
+    val height: Double = 0.0,
+    val theme: String = "dark"
 )
 
 data class BackgroundData(

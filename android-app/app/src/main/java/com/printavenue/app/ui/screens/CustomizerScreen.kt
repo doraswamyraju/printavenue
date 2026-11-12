@@ -223,6 +223,7 @@ fun CustomizerScreen(
 
                 SheetCanvasRenderer(
                     template = activeTemplate,
+                    sheetTitle = currentSheet?.title ?: "",
                     productCategory = product.category,
                     userImageUrl = currentPhotoUrl,
                     logoUrl = logoUrl,
@@ -283,10 +284,20 @@ fun CustomizerScreen(
                         ) {
                             templates.forEach { tmpl ->
                                 val isSelected = tmpl.id == selectedTemplateId
+                                val isArtwork = tmpl.background.type == "image" && tmpl.background.value.isNotBlank()
+                                val previewBg = if (!isArtwork && tmpl.background.value.startsWith("#")) {
+                                    try {
+                                        Color(android.graphics.Color.parseColor(tmpl.background.value))
+                                    } catch (e: Exception) {
+                                        Color.White
+                                    }
+                                } else Color.White
+
                                 Box(
                                     modifier = Modifier
-                                        .size(100.dp, 120.dp)
+                                        .size(105.dp, 125.dp)
                                         .clip(RoundedCornerShape(8.dp))
+                                        .background(previewBg)
                                         .border(
                                             2.dp,
                                             if (isSelected) Color(0xFFF43F5E) else Color(0xFF334155),
@@ -295,17 +306,43 @@ fun CustomizerScreen(
                                         .clickable {
                                             viewModel.selectTemplate(currentSheetIndex, tmpl.id)
                                         }
-                                        .background(Color.White)
+                                        .padding(4.dp)
                                 ) {
-                                    if (tmpl.background.value.isNotBlank()) {
-                                        AsyncImage(
-                                            model = ImageRequest.Builder(context)
-                                                .data(resolveAssetUrl(tmpl.background.value))
-                                                .build(),
+                                    if (isArtwork) {
+                                        com.printavenue.app.ui.components.SmartArtworkImage(
+                                            src = tmpl.background.value,
                                             contentDescription = tmpl.name,
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
+                                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
                                         )
+                                    } else {
+                                        Column(
+                                            modifier = Modifier.fillMaxSize(),
+                                            verticalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f)
+                                                    .background(Color(0xFFE2E8F0), RoundedCornerShape(4.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "PHOTO",
+                                                    fontSize = 8.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF64748B)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = tmpl.name,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color(0xFF1E293B),
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
                                 }
                             }
