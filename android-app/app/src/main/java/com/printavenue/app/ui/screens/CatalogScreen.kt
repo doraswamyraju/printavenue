@@ -156,7 +156,12 @@ fun ProductCatalogCard(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val previewThumb = product.sheets.firstOrNull()?.templates?.firstOrNull()?.background?.value
+    // Prioritize product.thumbnail from backend, then any graphic template image, then fallback
+    val previewThumb = product.thumbnail?.takeIf { it.isNotBlank() }
+        ?: product.sheets.asSequence()
+            .flatMap { it.templates.asSequence() }
+            .map { it.background.value }
+            .firstOrNull { it.isNotBlank() && (it.startsWith("http") || it.startsWith("/") || it.startsWith("data:image")) }
 
     Card(
         modifier = Modifier
@@ -176,11 +181,8 @@ fun ProductCatalogCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (!previewThumb.isNullOrBlank()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(resolveAssetUrl(previewThumb))
-                            .crossfade(true)
-                            .build(),
+                    com.printavenue.app.ui.components.SmartArtworkImage(
+                        src = previewThumb,
                         contentDescription = product.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

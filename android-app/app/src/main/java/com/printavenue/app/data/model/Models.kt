@@ -14,6 +14,7 @@ data class Product(
     val orientation: String,
     val dimensions: String,
     val basePrice: Double,
+    val thumbnail: String? = null,
     val status: String? = "published",
     val tiers: List<PricingTier> = emptyList(),
     val sheets: List<ProductSheet> = emptyList()
