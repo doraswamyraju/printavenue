@@ -330,34 +330,53 @@ fun SheetCanvasRenderer(
         }
 
         // Layer 6: Dynamic Text Slots (e.g. Company Name, Tagline, Greetings)
-        template.textSlots?.filter { it.enabled }?.forEach { slot ->
-            val textLeft = totalWidth * (slot.x.toFloat() / 100f)
-            val textTop = totalHeight * (slot.y.toFloat() / 100f)
-            
-            // Priority: User typed text from customTexts map -> slot.label -> slot.placeholder -> slot.defaultText
-            val userText = customTexts?.get(slot.id)
-                ?.takeIf { it.isNotBlank() }
-                ?: customTexts?.get("company_name")?.takeIf { it.isNotBlank() && (slot.id.contains("1") || slot.id.contains("company")) }
-                ?: customTexts?.get("contact_text")?.takeIf { it.isNotBlank() && (slot.id.contains("2") || slot.id.contains("contact")) }
-                ?: slot.defaultText
-                ?: slot.placeholder
-                ?: slot.label
+        val textSlotsToRender = template.textSlots?.filter { it.enabled }
+        if (!textSlotsToRender.isNullOrEmpty()) {
+            textSlotsToRender.forEach { slot ->
+                val textLeft = totalWidth * (slot.x.toFloat() / 100f)
+                val textTop = totalHeight * (slot.y.toFloat() / 100f)
 
-            val textColor = try {
-                if (!slot.fontColor.isNullOrBlank()) {
-                    Color(android.graphics.Color.parseColor(slot.fontColor))
-                } else Color.White
-            } catch (e: Exception) {
-                Color.White
+                val userText = customTexts?.get(slot.id)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: customTexts?.get("company_name")?.takeIf { it.isNotBlank() && (slot.id.contains("1") || slot.id.contains("company")) }
+                    ?: customTexts?.get("contact_text")?.takeIf { it.isNotBlank() && (slot.id.contains("2") || slot.id.contains("contact")) }
+                    ?: slot.defaultText
+                    ?: slot.placeholder
+                    ?: slot.label
+
+                val textColor = try {
+                    if (!slot.fontColor.isNullOrBlank()) {
+                        Color(android.graphics.Color.parseColor(slot.fontColor))
+                    } else Color.White
+                } catch (e: Exception) {
+                    Color.White
+                }
+
+                Text(
+                    text = userText,
+                    color = textColor,
+                    fontSize = (slot.fontSize * 0.75).sp,
+                    fontWeight = if (slot.fontWeight == "bold") FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier.offset(x = textLeft, y = textTop)
+                )
             }
-
-            Text(
-                text = userText,
-                color = textColor,
-                fontSize = (slot.fontSize * 0.75).sp,
-                fontWeight = if (slot.fontWeight == "bold") FontWeight.Bold else FontWeight.Normal,
-                modifier = Modifier.offset(x = textLeft, y = textTop)
-            )
+        } else {
+            // Fallback for standard templates without multi-text slots: show company name at bottom
+            val brandGreeting = customTexts?.get("company_name")?.takeIf { it.isNotBlank() }
+                ?: template.textOverlay?.defaultText?.takeIf { it.isNotBlank() }
+            if (!brandGreeting.isNullOrBlank()) {
+                val posX = template.textOverlay?.position?.x?.toFloat() ?: 50f
+                val posY = template.textOverlay?.position?.y?.toFloat() ?: 88f
+                Text(
+                    text = brandGreeting,
+                    color = if (template.background.type == "color" && template.background.value.startsWith("#FAFA")) Color(0xFF1E293B) else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                )
+            }
         }
     }
 }

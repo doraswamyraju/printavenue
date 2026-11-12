@@ -42,7 +42,19 @@ data class DesignTemplate(
     val calendarLayout: CalendarLayout? = null,
     val logoSlot: LogoSlot? = null,
     val brandingBadge: BrandingBadge? = null,
-    val textSlots: List<TextSlot>? = null
+    val textSlots: List<TextSlot>? = null,
+    val textOverlay: TextOverlay? = null
+)
+
+data class TextOverlay(
+    val enabled: Boolean = false,
+    val defaultText: String? = null,
+    val position: Position? = null
+)
+
+data class Position(
+    val x: Double = 50.0,
+    val y: Double = 88.0
 )
 
 data class LogoSlot(
