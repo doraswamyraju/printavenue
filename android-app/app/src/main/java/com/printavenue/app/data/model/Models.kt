@@ -2,6 +2,10 @@ package com.printavenue.app.data.model
 
 import com.google.gson.annotations.SerializedName
 
+data class ProductsResponse(
+    val products: List<Product> = emptyList()
+)
+
 data class Product(
     val id: String,
     val slug: String,

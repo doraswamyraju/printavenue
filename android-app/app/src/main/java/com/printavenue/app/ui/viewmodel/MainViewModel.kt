@@ -53,8 +53,8 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             _productsState.value = ProductsUiState.Loading
             try {
-                val list = api.getProducts()
-                _productsState.value = ProductsUiState.Success(list)
+                val resp = api.getProducts()
+                _productsState.value = ProductsUiState.Success(resp.products)
             } catch (e: Exception) {
                 _productsState.value = ProductsUiState.Error(e.localizedMessage ?: "Failed to load products")
             }

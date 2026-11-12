@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 interface PrintAvenueApiService {
 
     @GET("api/products")
-    suspend fun getProducts(): List<Product>
+    suspend fun getProducts(): ProductsResponse
 
     @Multipart
     @POST("api/upload")
