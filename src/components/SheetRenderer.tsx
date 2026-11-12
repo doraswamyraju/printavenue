@@ -104,9 +104,10 @@ export const SheetRenderer: React.FC<Props> = ({
         <img
           src={template.background.value}
           alt="Base Artwork"
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
+          className={`absolute inset-0 w-full h-full pointer-events-none ${
             isUnderArtwork ? 'z-10' : 'z-0'
           }`}
+          style={{ objectFit: 'fill' }}
         />
       )}
 

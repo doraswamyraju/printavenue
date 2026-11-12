@@ -230,6 +230,7 @@ export const ProductsManagementView: React.FC<Props> = ({
                       monthIndices={sheet.monthIndices}
                       sheetTitle={sheet.title}
                       aspectRatio={sheet.aspectRatio}
+                      productCategory={prod.category}
                       className="w-full scale-100"
                     />
                   </div>
