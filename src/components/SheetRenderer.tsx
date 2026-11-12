@@ -73,17 +73,25 @@ export const SheetRenderer: React.FC<Props> = ({
             }}
           />
         ) : (
-          /* Noticeable visual preview when no photo is uploaded yet so admin/customer clearly sees the photo boundary */
-          <div className="w-full h-full flex flex-col items-center justify-center bg-rose-500/10 border-2 border-dashed border-rose-400 text-rose-500 p-2">
+          /* Noticeable visual preview when no photo is uploaded yet: positioned directly over the polygon bounding box */
+          <div
+            className="absolute flex flex-col items-center justify-center bg-rose-500/20 border-2 border-dashed border-rose-400 text-rose-500 p-2 shadow-inner transition-all"
+            style={{
+              left: `${template.imageLayout.x}%`,
+              top: `${template.imageLayout.y}%`,
+              width: `${template.imageLayout.width}%`,
+              height: `${template.imageLayout.height}%`,
+            }}
+          >
             <svg
-              className="w-7 h-7 mx-auto mb-1 stroke-current"
+              className="w-6 h-6 mx-auto mb-1 stroke-current opacity-90"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="text-[10px] font-bold tracking-wider uppercase text-center">
+            <span className="text-[10px] font-black tracking-wider uppercase text-center block leading-tight">
               PHOTO PLACEHOLDER
             </span>
           </div>
