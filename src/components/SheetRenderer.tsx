@@ -17,6 +17,7 @@ interface Props {
   globalTextInputs?: Record<string, string>;
   interactive?: boolean;
   aspectRatio?: string; // e.g. "1.414" or "0.707"
+  productCategory?: string; // 'desk' | 'wall' | 'memento' | 'banner' | 'card' etc.
   className?: string;
   id?: string;
 }
@@ -31,10 +32,12 @@ export const SheetRenderer: React.FC<Props> = ({
   globalBrandName,
   globalTextInputs = {},
   aspectRatio = '1.414',
+  productCategory,
   className = '',
   id,
 }) => {
-  const isCover = !monthIndices || monthIndices.length === 0;
+  const isCalendar = productCategory === 'desk' || productCategory === 'wall' || (!productCategory && monthIndices.length > 0);
+  const isCover = isCalendar && (!monthIndices || monthIndices.length === 0);
   const isGraphicArtwork = template.background.type === 'image';
   const isUnderArtwork = template.imageLayout.layerPosition === 'under-artwork';
 
@@ -48,7 +51,7 @@ export const SheetRenderer: React.FC<Props> = ({
     >
       {/* 1. User Uploaded Image Slot (Placed at back if layerPosition === 'under-artwork') */}
       <div
-        className={`absolute inset-0 transition-all overflow-hidden flex items-center justify-center ${
+        className={`absolute inset-0 transition-all overflow-hidden ${
           isUnderArtwork ? 'z-0' : 'z-20'
         }`}
         style={{
@@ -63,8 +66,11 @@ export const SheetRenderer: React.FC<Props> = ({
           <img
             src={userImage}
             alt="Uploaded customization"
-            className="w-full h-full object-cover pointer-events-none"
-            style={{ objectFit: template.imageLayout.objectFit || 'cover' }}
+            className="w-full h-full pointer-events-none"
+            style={{
+              objectFit: 'cover',
+              objectPosition: `${((template.imageLayout.x + template.imageLayout.width / 2) || 50).toFixed(1)}% ${((template.imageLayout.y + template.imageLayout.height / 2) || 50).toFixed(1)}%`,
+            }}
           />
         ) : (
           /* Noticeable visual preview when no photo is uploaded yet so admin/customer clearly sees the photo boundary */
@@ -178,7 +184,9 @@ export const SheetRenderer: React.FC<Props> = ({
             left: `${template.logoSlot.x}%`,
             top: `${template.logoSlot.y}%`,
             width: `${template.logoSlot.width}%`,
-            height: `${template.logoSlot.height}%`,
+            // If circular, use aspectRatio 1:1 so non-square boxes stay a perfect geometric circle!
+            aspectRatio: template.logoSlot.shape === 'circle' ? '1 / 1' : undefined,
+            height: template.logoSlot.shape === 'circle' ? undefined : `${template.logoSlot.height}%`,
             borderRadius: template.logoSlot.shape === 'circle' ? '50%' : `${template.logoSlot.borderRadius || 4}px`,
           }}
         >
@@ -190,7 +198,7 @@ export const SheetRenderer: React.FC<Props> = ({
               className="w-full h-full object-contain pointer-events-none"
             />
           ) : (
-            <div className="w-full h-full border border-dashed border-blue-400 bg-blue-500/10 rounded flex items-center justify-center p-1 text-blue-500 text-[9px] font-bold">
+            <div className="w-full h-full border border-dashed border-blue-400 bg-blue-500/10 rounded-full flex items-center justify-center p-1 text-blue-500 text-[9px] font-bold">
               <span>LOGO</span>
             </div>
           )}

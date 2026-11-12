@@ -205,10 +205,12 @@ export async function composePrintReadySheet({
       const lX = (template.logoSlot.x / 100) * width;
       const lY = (template.logoSlot.y / 100) * height;
       const lW = (template.logoSlot.width / 100) * width;
-      const lH = (template.logoSlot.height / 100) * height;
+      // If circular, constrain height to match width in physical pixels for a true geometric circle
+      const isCircle = template.logoSlot.shape === 'circle';
+      const lH = isCircle ? lW : (template.logoSlot.height / 100) * height;
 
       ctx.save();
-      if (template.logoSlot.shape === 'circle') {
+      if (isCircle) {
         ctx.beginPath();
         ctx.arc(lX + lW / 2, lY + lH / 2, Math.min(lW, lH) / 2, 0, Math.PI * 2);
         ctx.clip();

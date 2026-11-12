@@ -597,7 +597,11 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                 <img
                   src={sampleCustomerPhoto}
                   alt="Customer Simulation"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: `${((points.reduce((acc, p) => acc + p.x, 0) / points.length) || 50).toFixed(1)}% ${((points.reduce((acc, p) => acc + p.y, 0) / points.length) || 50).toFixed(1)}%`,
+                  }}
                 />
               </div>
 
@@ -621,7 +625,8 @@ export const TemplateBuilderModal: React.FC<Props> = ({
                     left: `${logoX}%`,
                     top: `${logoY}%`,
                     width: `${logoW}%`,
-                    height: `${logoH}%`,
+                    aspectRatio: logoShape === 'circle' ? '1 / 1' : undefined,
+                    height: logoShape === 'circle' ? undefined : `${logoH}%`,
                     borderRadius: logoShape === 'circle' ? '50%' : '6px',
                   }}
                   title="Click & drag to move logo, or pull the corner handle to resize!"

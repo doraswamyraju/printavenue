@@ -5,12 +5,27 @@ import React from 'react';
 interface Props {
   children: React.ReactNode;
   orientation?: 'landscape' | 'portrait';
+  productCategory?: string; // 'desk' | 'wall' | 'memento' | 'banner' | 'card' etc.
 }
 
 export const CalendarMockupFrame: React.FC<Props> = ({
   children,
   orientation = 'landscape',
+  productCategory,
 }) => {
+  const isCalendar = productCategory === 'desk' || productCategory === 'wall' || !productCategory;
+
+  // Non-calendar products (Mementos, Banners, Cards): Clean display without wire-o spiral or calendar stand!
+  if (!isCalendar) {
+    return (
+      <div className="relative mx-auto flex flex-col items-center select-none w-full max-w-lg">
+        <div className="relative z-10 w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-800 bg-slate-900/40">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative mx-auto flex flex-col items-center select-none">
       {/* 1. Spiral Wire-O Rings at Top */}

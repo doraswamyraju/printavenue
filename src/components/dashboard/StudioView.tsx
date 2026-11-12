@@ -192,30 +192,34 @@ export const StudioView: React.FC<Props> = ({
             <div>
               <h2 className="text-xl font-black text-white">{product.title}</h2>
               <p className="text-xs text-slate-400">
-                Sheet {currentSheetIndex + 1} of {product.sheets.length} &middot;{' '}
+                {product.category === 'memento' || product.category === 'banner' || product.category === 'card'
+                  ? 'Print Surface'
+                  : 'Sheet'} {currentSheetIndex + 1} of {product.sheets.length} &middot;{' '}
                 <span className="text-rose-400 font-bold">{currentSheet.title}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Year Selector */}
-            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
-              <span className="text-slate-500 font-bold px-2">Year:</span>
-              {product.supportedYears.map((yr) => (
-                <button
-                  key={yr}
-                  onClick={() => setSelectedYear(yr)}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                    selectedYear === yr
-                      ? 'bg-rose-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {yr}
-                </button>
-              ))}
-            </div>
+            {/* Year Selector (Only for Calendars) */}
+            {(product.category === 'desk' || product.category === 'wall') && (
+              <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                <span className="text-slate-500 font-bold px-2">Year:</span>
+                {product.supportedYears.map((yr) => (
+                  <button
+                    key={yr}
+                    onClick={() => setSelectedYear(yr)}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition ${
+                      selectedYear === yr
+                        ? 'bg-rose-600 text-white shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {yr}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <button
               onClick={() => setShowFullReview(true)}
@@ -369,7 +373,10 @@ export const StudioView: React.FC<Props> = ({
           {/* Left: Protected Mockup Preview (7 cols) */}
           <div className="lg:col-span-7 flex flex-col items-center">
             <div className="w-full max-w-xl">
-              <CalendarMockupFrame orientation={product.orientation}>
+              <CalendarMockupFrame
+                orientation={product.orientation}
+                productCategory={product.category}
+              >
                 <SheetRenderer
                   template={activeTemplate}
                   year={selectedYear}
@@ -380,6 +387,7 @@ export const StudioView: React.FC<Props> = ({
                   globalBrandName={globalBrandName}
                   globalTextInputs={globalTextInputs}
                   aspectRatio={currentSheet.aspectRatio}
+                  productCategory={product.category}
                 />
               </CalendarMockupFrame>
 
@@ -489,6 +497,7 @@ export const StudioView: React.FC<Props> = ({
                           globalBrandName={globalBrandName}
                           globalTextInputs={globalTextInputs}
                           aspectRatio={currentSheet.aspectRatio}
+                          productCategory={product.category}
                           className="scale-95 origin-center shadow-none border-none"
                         />
                       </div>
@@ -618,6 +627,7 @@ export const StudioView: React.FC<Props> = ({
                           globalBrandName={globalBrandName}
                           globalTextInputs={globalTextInputs}
                           aspectRatio={currentSheet.aspectRatio}
+                          productCategory={product.category}
                           className="w-full"
                         />
                       </div>
