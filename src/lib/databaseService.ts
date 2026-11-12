@@ -57,7 +57,8 @@ export async function deleteProductById(id: string): Promise<void> {
 export async function addTemplateToSheet(
   productId: string,
   sheetId: string,
-  template: DesignTemplate
+  template: DesignTemplate,
+  sheetAspectRatio?: string | number
 ): Promise<void> {
   await ensureDb();
   const products = await getAllProducts();
@@ -66,6 +67,9 @@ export async function addTemplateToSheet(
 
   const sheet = products[prodIndex].sheets.find((s) => s.id === sheetId);
   if (sheet) {
+    if (sheetAspectRatio) {
+      sheet.aspectRatio = String(sheetAspectRatio);
+    }
     const existingIdx = sheet.templates.findIndex((t) => t.id === template.id);
     if (existingIdx >= 0) {
       sheet.templates[existingIdx] = template; // update in place

@@ -25,6 +25,7 @@ export interface DesignTemplate {
   background: {
     type: 'color' | 'gradient' | 'pattern' | 'image';
     value: string; // Hex color, gradient string, or Image URL / Base64 of artwork
+    aspectRatio?: number; // Natural image aspect ratio (width / height)
   };
   overlayImage?: string; // Optional foreground frame image (with transparent hole)
   textOverlay?: {

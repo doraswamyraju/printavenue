@@ -408,6 +408,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
         background: {
           type: artworkImage ? 'image' : 'color',
           value: artworkImage || '#FFFFFF',
+          aspectRatio: canvasAspectRatio,
         },
         logoSlot: logoEnabled
           ? {
@@ -435,6 +436,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
             productId: prodId,
             sheetId: targetSheet.id,
             template: newTemplate,
+            sheetAspectRatio: canvasAspectRatio,
           }),
         });
       }

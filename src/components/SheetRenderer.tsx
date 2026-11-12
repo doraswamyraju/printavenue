@@ -41,11 +41,14 @@ export const SheetRenderer: React.FC<Props> = ({
   const isGraphicArtwork = template.background.type === 'image';
   const isUnderArtwork = template.imageLayout.layerPosition === 'under-artwork';
 
+  // Effective aspect ratio: prioritized from template background, then sheet aspectRatio prop
+  const effectiveAspectRatio = template.background?.aspectRatio || aspectRatio;
+
   return (
     <div
       className={`relative w-full overflow-hidden shadow-lg border border-slate-200 select-none bg-white transition-all ${className}`}
       style={{
-        aspectRatio: aspectRatio,
+        aspectRatio: `${effectiveAspectRatio}`,
         backgroundColor: !isGraphicArtwork ? template.background.value : undefined,
       }}
     >

@@ -5,12 +5,12 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, sheetId, template } = await req.json();
+    const { productId, sheetId, template, sheetAspectRatio } = await req.json();
     if (!productId || !sheetId || !template) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    await addTemplateToSheet(productId, sheetId, template);
+    await addTemplateToSheet(productId, sheetId, template, sheetAspectRatio);
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     return NextResponse.json(
