@@ -34,3 +34,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android build artifacts
+android-app/**/build/
+android-app/.gradle/
+android-app/.idea/
+android-app/*.iml
+android-app/local.properties
+android-app/.kotlin/
