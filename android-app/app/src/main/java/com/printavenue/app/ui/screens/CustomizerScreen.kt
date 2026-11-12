@@ -54,7 +54,8 @@ fun CustomizerScreen(
     val selectedTemplateId = viewModel.selectedTemplates[currentSheetIndex] ?: templates.firstOrNull()?.id ?: ""
     val activeTemplate = templates.find { it.id == selectedTemplateId } ?: templates.firstOrNull()
 
-    val currentPhotoUrl = viewModel.userPhotos[currentSheetIndex]
+    val userPhotos by viewModel.userPhotos.collectAsState()
+    val currentPhotoUrl = userPhotos[currentSheetIndex]
     val companyName by viewModel.companyName.collectAsState()
     val contactText by viewModel.contactText.collectAsState()
     val logoUrl by viewModel.logoUrl.collectAsState()
@@ -179,7 +180,7 @@ fun CustomizerScreen(
                 ) {
                     product.sheets.forEachIndexed { index, sheet ->
                         val isSelected = index == currentSheetIndex
-                        val hasPhoto = viewModel.userPhotos.containsKey(index)
+                        val hasPhoto = userPhotos.containsKey(index)
 
                         FilterChip(
                             selected = isSelected,

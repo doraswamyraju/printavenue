@@ -39,8 +39,20 @@ data class DesignTemplate(
     val background: BackgroundData = BackgroundData("color", "#FFFFFF"),
     val imageLayout: ImageLayout = ImageLayout(),
     val calendarLayout: CalendarLayout? = null,
+    val logoSlot: LogoSlot? = null,
     val brandingBadge: BrandingBadge? = null,
     val textSlots: List<TextSlot>? = null
+)
+
+data class LogoSlot(
+    val enabled: Boolean = false,
+    val label: String? = "Brand Logo",
+    val x: Double = 50.0,
+    val y: Double = 15.0,
+    val width: Double = 10.0,
+    val height: Double = 10.0,
+    val shape: String? = "circle", // "circle" or "rect"
+    val borderRadius: Double? = 4.0
 )
 
 data class CalendarLayout(
@@ -77,13 +89,17 @@ data class BrandingBadge(
 
 data class TextSlot(
     val id: String,
-    val label: String,
-    val placeholder: String,
-    val x: Double,
-    val y: Double,
+    val enabled: Boolean = true,
+    val label: String = "",
+    val placeholder: String? = null,
+    val defaultText: String? = null,
+    val x: Double = 0.0,
+    val y: Double = 0.0,
+    val width: Double? = null,
     val fontSize: Int = 14,
-    val fontColor: String = "#ffffff",
-    val fontWeight: String = "normal"
+    val fontColor: String? = "#ffffff",
+    val fontWeight: String? = "bold",
+    val textAlign: String? = "left"
 )
 
 data class UploadResponse(

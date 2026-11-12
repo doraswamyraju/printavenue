@@ -283,54 +283,77 @@ fun SheetCanvasRenderer(
             }
         }
 
-        // Layer 5: Branding Logo Badge
-        template.brandingBadge?.let { badge ->
-            if (badge.enabled) {
-                val badgeSize = totalWidth * (badge.size.toFloat() / 100f)
-                val badgeLeft = (totalWidth * (badge.x.toFloat() / 100f)) - (badgeSize / 2)
-                val badgeTop = (totalHeight * (badge.y.toFloat() / 100f)) - (badgeSize / 2)
+        // Layer 5: Branding Logo Slot (Supports both template.logoSlot and template.brandingBadge)
+        val activeLogoSlot = template.logoSlot ?: template.brandingBadge?.let {
+            com.printavenue.app.data.model.LogoSlot(
+                enabled = it.enabled,
+                x = it.x,
+                y = it.y,
+                width = it.size,
+                height = it.size,
+                shape = it.shape
+            )
+        }
 
-                Box(
-                    modifier = Modifier
-                        .offset(x = badgeLeft, y = badgeTop)
-                        .size(badgeSize)
-                        .clip(if (badge.shape == "circle") CircleShape else RoundedCornerShape(4.dp))
-                        .background(Color.White.copy(alpha = 0.95f))
-                        .border(1.dp, Color(0xFFCBD5E1), if (badge.shape == "circle") CircleShape else RoundedCornerShape(4.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!logoUrl.isNullOrBlank()) {
-                        SmartArtworkImage(
-                            src = logoUrl,
-                            contentDescription = "Logo",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize().padding(2.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "LOGO",
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B)
-                        )
-                    }
+        if (activeLogoSlot != null && activeLogoSlot.enabled) {
+            val isCircle = activeLogoSlot.shape == "circle"
+            val badgeWidth = totalWidth * (activeLogoSlot.width.toFloat() / 100f)
+            val badgeHeight = if (isCircle) badgeWidth else totalHeight * (activeLogoSlot.height.toFloat() / 100f)
+            val badgeLeft = totalWidth * (activeLogoSlot.x.toFloat() / 100f)
+            val badgeTop = totalHeight * (activeLogoSlot.y.toFloat() / 100f)
+
+            Box(
+                modifier = Modifier
+                    .offset(x = badgeLeft, y = badgeTop)
+                    .size(width = badgeWidth, height = badgeHeight)
+                    .clip(if (isCircle) CircleShape else RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.95f))
+                    .border(1.dp, Color(0xFFCBD5E1), if (isCircle) CircleShape else RoundedCornerShape(4.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!logoUrl.isNullOrBlank()) {
+                    SmartArtworkImage(
+                        src = logoUrl,
+                        contentDescription = "Logo",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().padding(2.dp)
+                    )
+                } else {
+                    Text(
+                        text = "LOGO",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B)
+                    )
                 }
             }
         }
 
-        // Layer 6: Dynamic Text Slots
-        template.textSlots?.forEach { slot ->
+        // Layer 6: Dynamic Text Slots (e.g. Company Name, Tagline, Greetings)
+        template.textSlots?.filter { it.enabled }?.forEach { slot ->
             val textLeft = totalWidth * (slot.x.toFloat() / 100f)
             val textTop = totalHeight * (slot.y.toFloat() / 100f)
-            val userText = customTexts?.get(slot.id) ?: slot.placeholder
+            
+            // Priority: User typed text from customTexts map -> slot.label -> slot.placeholder -> slot.defaultText
+            val userText = customTexts?.get(slot.id)
+                ?.takeIf { it.isNotBlank() }
+                ?: customTexts?.get("company_name")?.takeIf { it.isNotBlank() && (slot.id.contains("1") || slot.id.contains("company")) }
+                ?: customTexts?.get("contact_text")?.takeIf { it.isNotBlank() && (slot.id.contains("2") || slot.id.contains("contact")) }
+                ?: slot.defaultText
+                ?: slot.placeholder
+                ?: slot.label
+
+            val textColor = try {
+                if (!slot.fontColor.isNullOrBlank()) {
+                    Color(android.graphics.Color.parseColor(slot.fontColor))
+                } else Color.White
+            } catch (e: Exception) {
+                Color.White
+            }
 
             Text(
                 text = userText,
-                color = try {
-                    Color(android.graphics.Color.parseColor(slot.fontColor))
-                } catch (e: Exception) {
-                    Color.White
-                },
+                color = textColor,
                 fontSize = (slot.fontSize * 0.75).sp,
                 fontWeight = if (slot.fontWeight == "bold") FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.offset(x = textLeft, y = textTop)

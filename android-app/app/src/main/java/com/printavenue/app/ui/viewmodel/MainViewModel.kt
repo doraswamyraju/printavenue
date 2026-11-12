@@ -34,7 +34,8 @@ class MainViewModel : ViewModel() {
 
     // Sheet customizer state
     val selectedTemplates = mutableStateMapOf<Int, String>()
-    val userPhotos = mutableStateMapOf<Int, String>()
+    private val _userPhotos = MutableStateFlow<Map<Int, String>>(emptyMap())
+    val userPhotos: StateFlow<Map<Int, String>> = _userPhotos
 
     private val _companyName = MutableStateFlow("")
     val companyName: StateFlow<String> = _companyName
@@ -85,7 +86,7 @@ class MainViewModel : ViewModel() {
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val resp = api.uploadFile(body)
                 if (resp.success) {
-                    userPhotos[sheetIndex] = resp.url
+                    _userPhotos.value = _userPhotos.value + (sheetIndex to resp.url)
                     onResult(true, "Photo uploaded successfully!")
                 } else {
                     onResult(false, "Upload failed.")
@@ -134,7 +135,7 @@ class MainViewModel : ViewModel() {
                     SheetCustomization(
                         sheetNumber = sheet.sheetNumber,
                         templateId = chosenTemplate,
-                        userImageUrl = userPhotos[index],
+                        userImageUrl = _userPhotos.value[index],
                         logoUrl = _logoUrl.value,
                         customTexts = mapOf(
                             "company_name" to _companyName.value,
