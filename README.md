@@ -20,6 +20,17 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Deployment to VPS
+
+The production web app is deployed on Hostinger VPS (`srv875579`) running behind PM2 and Nginx at [https://printavenue.sriddha.com](https://printavenue.sriddha.com).
+
+For full step-by-step update commands and troubleshooting, see [DEPLOYMENT.md](file:///d:/PrintAvenue/DEPLOYMENT.md).
+
+Quick 1-line update command on VPS:
+```bash
+cd /path/to/printavenue && git pull origin main && npm run build && pm2 restart printavenue
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
