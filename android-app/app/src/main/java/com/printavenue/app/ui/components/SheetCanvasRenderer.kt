@@ -1,7 +1,9 @@
 package com.printavenue.app.ui.components
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Base64
+import java.io.File
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -140,10 +142,34 @@ fun SmartArtworkImage(
             )
         }
     } else {
+        // Resolve data model (File, Uri, or String URL)
+        val imageModel: Any = remember(src) {
+            when {
+                src.startsWith("content://") -> Uri.parse(src)
+                src.startsWith("file://") -> {
+                    val path = src.removePrefix("file://")
+                    val f = File(path)
+                    if (f.exists()) f else Uri.parse(src)
+                }
+                src.startsWith("/storage/") || src.startsWith("/data/") -> {
+                    val f = File(src)
+                    if (f.exists()) f else File(src)
+                }
+                File(src).exists() && File(src).isAbsolute -> File(src)
+                src.startsWith("http://") || src.startsWith("https://") -> src
+                else -> resolveAssetUrl(src)
+            }
+        }
+
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data(resolveAssetUrl(src))
+                .data(imageModel)
                 .crossfade(true)
+                .listener(
+                    onError = { _, result ->
+                        android.util.Log.e("SmartArtworkImage", "Failed to load image: $src, error: ${result.throwable.message}")
+                    }
+                )
                 .build(),
             contentDescription = contentDescription,
             contentScale = contentScale,
@@ -241,7 +267,6 @@ fun SheetCanvasRenderer(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(polygonShape)
-                            .background(Color(0xFF0F172A))
                             .then(photoGestureModifier)
                     ) {
                         SmartArtworkImage(
@@ -264,7 +289,6 @@ fun SheetCanvasRenderer(
                             .offset(x = photoLeft, y = photoTop)
                             .size(width = photoWidth, height = photoHeight)
                             .clip(CircleShape)
-                            .background(Color(0xFF0F172A))
                             .then(photoGestureModifier)
                     ) {
                         SmartArtworkImage(
@@ -288,7 +312,6 @@ fun SheetCanvasRenderer(
                             .offset(x = photoLeft, y = photoTop)
                             .size(width = photoWidth, height = photoHeight)
                             .clip(RoundedCornerShape(cornerRadius))
-                            .background(Color(0xFF0F172A))
                             .then(photoGestureModifier)
                     ) {
                         SmartArtworkImage(

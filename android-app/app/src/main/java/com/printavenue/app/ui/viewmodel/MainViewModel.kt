@@ -37,6 +37,10 @@ class MainViewModel : ViewModel() {
     private val _userPhotos = MutableStateFlow<Map<Int, String>>(emptyMap())
     val userPhotos: StateFlow<Map<Int, String>> = _userPhotos
 
+    // Server URLs stored upon successful upload for backend orders
+    private val _uploadedPhotoUrls = mutableMapOf<Int, String>()
+    private var _uploadedLogoUrl: String? = null
+
     private val _companyName = MutableStateFlow("")
     val companyName: StateFlow<String> = _companyName
 
@@ -89,8 +93,12 @@ class MainViewModel : ViewModel() {
         _contactText.value = text
     }
 
+    fun setCustomerPhoto(sheetIndex: Int, path: String) {
+        _userPhotos.value = _userPhotos.value + (sheetIndex to path)
+    }
+
     fun uploadCustomerPhoto(file: File, sheetIndex: Int, onResult: (Boolean, String) -> Unit) {
-        // Set local file path right away for zero-latency instant preview
+        // Set local file path right away for zero-latency instant preview that NEVER flickers or goes blank
         _userPhotos.value = _userPhotos.value + (sheetIndex to file.absolutePath)
         viewModelScope.launch {
             _isUploading.value = true
@@ -99,7 +107,8 @@ class MainViewModel : ViewModel() {
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val resp = api.uploadFile(body)
                 if (resp.success) {
-                    _userPhotos.value = _userPhotos.value + (sheetIndex to resp.url)
+                    // Record remote server URL for order placement, but keep local preview intact!
+                    _uploadedPhotoUrls[sheetIndex] = resp.url
                     onResult(true, "Photo uploaded successfully!")
                 } else {
                     onResult(false, "Upload failed.")
@@ -163,7 +172,7 @@ class MainViewModel : ViewModel() {
                 val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
                 val resp = api.uploadFile(body)
                 if (resp.success) {
-                    _logoUrl.value = resp.url
+                    _uploadedLogoUrl = resp.url
                     onResult(true, "Brand Logo uploaded!")
                 } else {
                     onResult(false, "Upload failed.")
@@ -191,8 +200,8 @@ class MainViewModel : ViewModel() {
                     SheetCustomization(
                         sheetNumber = sheet.sheetNumber,
                         templateId = chosenTemplate,
-                        userImageUrl = _userPhotos.value[index],
-                        logoUrl = _logoUrl.value,
+                        userImageUrl = _uploadedPhotoUrls[index] ?: _userPhotos.value[index],
+                        logoUrl = _uploadedLogoUrl ?: _logoUrl.value,
                         customTexts = mapOf(
                             "company_name" to _companyName.value,
                             "contact_text" to _contactText.value

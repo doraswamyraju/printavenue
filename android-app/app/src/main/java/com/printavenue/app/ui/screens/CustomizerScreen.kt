@@ -76,6 +76,8 @@ fun CustomizerScreen(
                 viewModel.uploadCustomerPhoto(file, currentSheetIndex) { success, msg ->
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 }
+            } else {
+                viewModel.setCustomerPhoto(currentSheetIndex, it.toString())
             }
         }
     }
