@@ -150,14 +150,16 @@ export const ProductsManagementView: React.FC<Props> = ({
   }[] = [];
 
   products.forEach((prod) => {
-    prod.sheets.forEach((sheet, sIdx) => {
-      sheet.templates.forEach((tpl) => {
-        allSavedTemplates.push({
-          product: prod,
-          sheet,
-          sheetIndex: sIdx,
-          template: tpl,
-        });
+    (prod.sheets || []).forEach((sheet, sIdx) => {
+      (sheet.templates || []).forEach((tpl) => {
+        if (tpl && tpl.background) {
+          allSavedTemplates.push({
+            product: prod,
+            sheet,
+            sheetIndex: sIdx,
+            template: tpl,
+          });
+        }
       });
     });
   });

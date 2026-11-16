@@ -56,20 +56,35 @@ export const SheetRenderer: React.FC<Props> = ({
   className = '',
   id,
 }) => {
+  if (!template) {
+    return (
+      <div
+        className={`relative w-full overflow-hidden shadow-lg border border-slate-200 select-none bg-slate-100 flex items-center justify-center text-slate-400 text-xs ${className}`}
+        style={{ aspectRatio: `${aspectRatio}` }}
+      >
+        <span>No Template Selected</span>
+      </div>
+    );
+  }
+
+  const bg = template.background || { type: 'color', value: '#FFFFFF' };
+  const imgLayout = template.imageLayout || { x: 10, y: 10, width: 80, height: 60, shapeType: 'rect' };
+  const calLayout = template.calendarLayout || { x: 0, y: 0, width: 0, height: 0, theme: 'light' };
+
   const isCalendar = productCategory === 'desk' || productCategory === 'wall' || (!productCategory && monthIndices.length > 0);
   const isCover = isCalendar && (!monthIndices || monthIndices.length === 0);
-  const isGraphicArtwork = template.background.type === 'image';
-  const isUnderArtwork = template.imageLayout.layerPosition === 'under-artwork';
+  const isGraphicArtwork = bg.type === 'image' && !!bg.value;
+  const isUnderArtwork = imgLayout.layerPosition === 'under-artwork';
 
   // Effective aspect ratio: prioritized from template background, then sheet aspectRatio prop
-  const effectiveAspectRatio = template.background?.aspectRatio || aspectRatio;
+  const effectiveAspectRatio = bg.aspectRatio || aspectRatio;
 
   return (
     <div
       className={`relative w-full overflow-hidden shadow-lg border border-slate-200 select-none bg-white transition-all ${className}`}
       style={{
         aspectRatio: `${effectiveAspectRatio}`,
-        backgroundColor: !isGraphicArtwork ? template.background.value : undefined,
+        backgroundColor: !isGraphicArtwork ? bg.value : undefined,
       }}
     >
       {/* 1. User Uploaded Image Slot (Placed at back if layerPosition === 'under-artwork') */}
@@ -79,8 +94,8 @@ export const SheetRenderer: React.FC<Props> = ({
         }`}
         style={{
           clipPath:
-            template.imageLayout.shapeType === 'polygon' && template.imageLayout.polygonPoints
-              ? `polygon(${template.imageLayout.polygonPoints})`
+            imgLayout.shapeType === 'polygon' && imgLayout.polygonPoints
+              ? `polygon(${imgLayout.polygonPoints})`
               : undefined,
         }}
       >
@@ -92,7 +107,7 @@ export const SheetRenderer: React.FC<Props> = ({
             className="w-full h-full pointer-events-none transition-transform duration-75"
             style={{
               objectFit: 'cover',
-              objectPosition: `${((template.imageLayout.x + template.imageLayout.width / 2) || 50).toFixed(1)}% ${((template.imageLayout.y + template.imageLayout.height / 2) || 50).toFixed(1)}%`,
+              objectPosition: `${((imgLayout.x + imgLayout.width / 2) || 50).toFixed(1)}% ${((imgLayout.y + imgLayout.height / 2) || 50).toFixed(1)}%`,
               transform: `scale(${imageTransform?.scale || 1}) translate(${imageTransform?.offsetX || 0}px, ${imageTransform?.offsetY || 0}px)`,
               transformOrigin: 'center center',
             }}
@@ -102,10 +117,10 @@ export const SheetRenderer: React.FC<Props> = ({
           <div
             className="absolute flex flex-col items-center justify-center bg-rose-500/20 border-2 border-dashed border-rose-400 text-rose-500 p-2 shadow-inner transition-all"
             style={{
-              left: `${template.imageLayout.x}%`,
-              top: `${template.imageLayout.y}%`,
-              width: `${template.imageLayout.width}%`,
-              height: `${template.imageLayout.height}%`,
+              left: `${imgLayout.x}%`,
+              top: `${imgLayout.y}%`,
+              width: `${imgLayout.width}%`,
+              height: `${imgLayout.height}%`,
             }}
           >
             <svg
@@ -127,7 +142,7 @@ export const SheetRenderer: React.FC<Props> = ({
       {isGraphicArtwork && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={template.background.value}
+          src={bg.value}
           alt="Base Artwork"
           className={`absolute inset-0 w-full h-full pointer-events-none ${
             isUnderArtwork ? 'z-10' : 'z-0'
@@ -137,14 +152,14 @@ export const SheetRenderer: React.FC<Props> = ({
       )}
 
       {/* 3. Calendar Grid (if not cover and not already inside artwork) */}
-      {!isCover && template.calendarLayout.width > 0 && (
+      {!isCover && calLayout.width > 0 && (
         <div
           className="absolute z-20 flex flex-col justify-start p-1 sm:p-2 pointer-events-none"
           style={{
-            left: `${template.calendarLayout.x}%`,
-            top: `${template.calendarLayout.y}%`,
-            width: `${template.calendarLayout.width}%`,
-            height: `${template.calendarLayout.height}%`,
+            left: `${calLayout.x}%`,
+            top: `${calLayout.y}%`,
+            width: `${calLayout.width}%`,
+            height: `${calLayout.height}%`,
           }}
         >
           {monthIndices.map((mIdx) => {

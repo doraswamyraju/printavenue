@@ -102,11 +102,21 @@ export const StudioView: React.FC<Props> = ({
     return initial;
   });
 
-  const currentSheet: SheetDefinition = product.sheets[currentSheetIndex];
-  const currentSheetItem = sheetData[currentSheet.id];
+  const currentSheet: SheetDefinition = (product?.sheets && product.sheets[currentSheetIndex]) || (product?.sheets && product.sheets[0]) || {
+    id: 'sheet-0',
+    sheetNumber: 0,
+    title: 'Sheet 1',
+    aspectRatio: '1.414',
+    templates: [],
+  };
+  const currentSheetItem = (currentSheet && sheetData[currentSheet.id]) || {
+    sheetId: currentSheet?.id || 'sheet-0',
+    sheetTitle: currentSheet?.title || 'Sheet 1',
+    selectedTemplateId: currentSheet?.templates?.[0]?.id || '',
+  };
   const activeTemplate =
-    currentSheet.templates.find((t) => t.id === currentSheetItem.selectedTemplateId) ||
-    currentSheet.templates[0];
+    (currentSheet?.templates || []).find((t) => t.id === currentSheetItem.selectedTemplateId) ||
+    currentSheet?.templates?.[0];
 
   // Pricing calculation
   const calculateUnitPrice = (qty: number) => {
