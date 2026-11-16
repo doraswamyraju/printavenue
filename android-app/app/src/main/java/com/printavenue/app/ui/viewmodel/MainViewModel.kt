@@ -134,6 +134,20 @@ class MainViewModel : ViewModel() {
         _photoTransforms.value = _photoTransforms.value + (sheetIndex to ImageTransformState())
     }
 
+    fun nudgePhoto(sheetIndex: Int, deltaX: Float, deltaY: Float) {
+        val current = _photoTransforms.value[sheetIndex] ?: ImageTransformState()
+        _photoTransforms.value = _photoTransforms.value + (sheetIndex to current.copy(
+            offsetX = current.offsetX + deltaX,
+            offsetY = current.offsetY + deltaY
+        ))
+    }
+
+    fun removeCustomerPhoto(sheetIndex: Int) {
+        _userPhotos.value = _userPhotos.value - sheetIndex
+        _uploadedPhotoUrls.remove(sheetIndex)
+        resetPhotoTransform(sheetIndex)
+    }
+
     fun updateGlobalFontFamily(font: String) {
         _globalTextStyle.value = _globalTextStyle.value.copy(fontFamily = font)
     }
