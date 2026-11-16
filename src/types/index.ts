@@ -103,6 +103,18 @@ export interface CustomizedSheetItem {
   originalImageFileName?: string;
   userLogoBase64?: string; // secondary image / logo
   customText?: string;
+  imageTransform?: {
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+  };
+  textStyles?: Record<string, {
+    fontFamily?: string;
+    fontColor?: string;
+    fontSizeDelta?: number;
+    isBold?: boolean;
+    isItalic?: boolean;
+  }>;
   composedPrintUrl?: string; // 100% full merged print-ready sheet (base artwork + photo + logo + text)
   previewThumbnailUrl?: string; // high-quality generated preview
 }

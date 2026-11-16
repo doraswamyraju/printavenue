@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -59,6 +60,11 @@ fun CustomizerScreen(
     val companyName by viewModel.companyName.collectAsState()
     val contactText by viewModel.contactText.collectAsState()
     val logoUrl by viewModel.logoUrl.collectAsState()
+    val photoTransforms by viewModel.photoTransforms.collectAsState()
+    val globalTextStyle by viewModel.globalTextStyle.collectAsState()
+    val slotTextStyles by viewModel.slotTextStyles.collectAsState()
+
+    val currentTransform = photoTransforms[currentSheetIndex] ?: com.printavenue.app.data.model.ImageTransformState()
 
     // Activity Result Launcher for selecting photo from gallery
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -229,24 +235,44 @@ fun CustomizerScreen(
                     userImageUrl = currentPhotoUrl,
                     logoUrl = logoUrl,
                     customTexts = customMap,
+                    globalTextStyle = globalTextStyle,
+                    slotTextStyles = slotTextStyles,
+                    imageTransform = currentTransform,
+                    onTransformChanged = { scale, x, y ->
+                        viewModel.updatePhotoTransform(currentSheetIndex, scale, x, y)
+                    },
                     onPickPhotoClick = { photoPickerLauncher.launch("image/*") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // Step 1: Customer Photo Picker Button
+            // Step 1: Customer Photo Picker Button & Photo Positioning
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "1. Customer Photo Insertion",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "1. Customer Photo Insertion",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        if (!currentPhotoUrl.isNullOrBlank()) {
+                            Text(
+                                text = "Photo Added",
+                                color = Color(0xFF10B981),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = { photoPickerLauncher.launch("image/*") },
@@ -257,7 +283,80 @@ fun CustomizerScreen(
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (isUploading) "Uploading..." else "Select & Upload Photo (Gallery)")
+                        Text(if (isUploading) "Uploading..." else if (currentPhotoUrl.isNullOrBlank()) "Select & Upload Photo (Gallery)" else "Change Photo (Gallery)")
+                    }
+
+                    // Interactive Pinch & Move Controls
+                    if (!currentPhotoUrl.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = Color(0xFF1E293B))
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Photo Pan & Zoom",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "✋ Pinch or drag photo on canvas",
+                                color = Color(0xFFF43F5E),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val newScale = maxOf(0.5f, currentTransform.scale - 0.2f)
+                                    viewModel.updatePhotoTransform(currentSheetIndex, newScale, currentTransform.offsetX, currentTransform.offsetY)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Text("Zoom -", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            Text(
+                                text = "%.1fx".format(currentTransform.scale),
+                                color = Color(0xFF38BDF8),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+
+                            OutlinedButton(
+                                onClick = {
+                                    val newScale = minOf(5.0f, currentTransform.scale + 0.2f)
+                                    viewModel.updatePhotoTransform(currentSheetIndex, newScale, currentTransform.offsetX, currentTransform.offsetY)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            ) {
+                                Text("Zoom +", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            OutlinedButton(
+                                onClick = { viewModel.resetPhotoTransform(currentSheetIndex) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFCBD5E1))
+                            ) {
+                                Text("Reset", fontSize = 11.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -394,6 +493,185 @@ fun CustomizerScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Text Typography, Font, Colour & Size Styling Controls
+                    HorizontalDivider(color = Color(0xFF1E293B))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Text Styling & Formatting",
+                        color = Color(0xFFF43F5E),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 1. Font Family Selector
+                    Text(
+                        text = "Font Family",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val fontList = listOf(
+                        "Inter" to "Modern",
+                        "Poppins" to "Geometric",
+                        "Montserrat" to "Clean",
+                        "Playfair" to "Luxury Serif",
+                        "Lora" to "Editorial",
+                        "Great Vibes" to "Calligraphy",
+                        "Pacifico" to "Brush",
+                        "Roboto Mono" to "Typewriter"
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        fontList.forEach { (fontKey, fontLabel) ->
+                            val isSelected = globalTextStyle.fontFamily.equals(fontKey, ignoreCase = true)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.updateGlobalFontFamily(fontKey) },
+                                label = { Text(fontLabel, fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFF43F5E),
+                                    selectedLabelColor = Color.White,
+                                    containerColor = Color(0xFF1E293B),
+                                    labelColor = Color(0xFFCBD5E1)
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 2. Font Colour Palette
+                    Text(
+                        text = "Font Colour",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val colorPalette = listOf(
+                        "#FFFFFF" to Color.White,
+                        "#0F172A" to Color(0xFF0F172A),
+                        "#F43F5E" to Color(0xFFF43F5E),
+                        "#2563EB" to Color(0xFF2563EB),
+                        "#10B981" to Color(0xFF10B981),
+                        "#F59E0B" to Color(0xFFF59E0B),
+                        "#8B5CF6" to Color(0xFF8B5CF6),
+                        "#FB7185" to Color(0xFFFB7185)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        colorPalette.forEach { (hex, clr) ->
+                            val isSelected = globalTextStyle.fontColor.equals(hex, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(clr)
+                                    .border(
+                                        width = if (isSelected) 3.dp else 1.dp,
+                                        color = if (isSelected) Color(0xFF38BDF8) else Color(0xFF475569),
+                                        shape = CircleShape
+                                    )
+                                    .clickable { viewModel.updateGlobalFontColor(hex) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = if (hex == "#FFFFFF") Color.Black else Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 3. Font Style (Bold / Italic) & Size Adjustments
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Bold Toggle
+                        FilterChip(
+                            selected = globalTextStyle.isBold,
+                            onClick = { viewModel.toggleGlobalBold() },
+                            label = { Text("Bold", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFF43F5E),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFF1E293B),
+                                labelColor = Color(0xFFCBD5E1)
+                            )
+                        )
+
+                        // Italic Toggle
+                        FilterChip(
+                            selected = globalTextStyle.isItalic,
+                            onClick = { viewModel.toggleGlobalItalic() },
+                            label = { Text("Italic", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFF43F5E),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFF1E293B),
+                                labelColor = Color(0xFFCBD5E1)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Size +/- buttons
+                        Text(
+                            text = "Size:",
+                            color = Color(0xFF94A3B8),
+                            fontSize = 11.sp
+                        )
+                        OutlinedButton(
+                            onClick = { viewModel.adjustGlobalFontSize(-2) },
+                            modifier = Modifier.size(32.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text("-", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Text(
+                            text = "%+d".format(globalTextStyle.fontSizeDelta),
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        OutlinedButton(
+                            onClick = { viewModel.adjustGlobalFontSize(2) },
+                            modifier = Modifier.size(32.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text("+", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 

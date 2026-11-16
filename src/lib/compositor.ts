@@ -18,9 +18,12 @@ export async function composePrintReadySheet({
   year,
   monthIndices = [],
   userImageBase64,
+  imageTransform,
   globalLogoBase64,
   globalBrandName,
   globalTextInputs = {},
+  globalTextStyle,
+  textStyles = {},
   caption,
   targetWidth = 2480, // A5 300 DPI Landscape width (2480 x 1748)
   aspectRatio = 1.414,
@@ -29,9 +32,24 @@ export async function composePrintReadySheet({
   year: number;
   monthIndices?: number[];
   userImageBase64?: string;
+  imageTransform?: { scale?: number; offsetX?: number; offsetY?: number };
   globalLogoBase64?: string;
   globalBrandName?: string;
   globalTextInputs?: Record<string, string>;
+  globalTextStyle?: {
+    fontFamily?: string;
+    fontColor?: string;
+    fontSizeDelta?: number;
+    isBold?: boolean;
+    isItalic?: boolean;
+  };
+  textStyles?: Record<string, {
+    fontFamily?: string;
+    fontColor?: string;
+    fontSizeDelta?: number;
+    isBold?: boolean;
+    isItalic?: boolean;
+  }>;
   caption?: string;
   targetWidth?: number;
   aspectRatio?: number;
@@ -123,6 +141,15 @@ export async function composePrintReadySheet({
         drawH = boundW / imgAspect;
         drawY = boundY - (drawH - boundH) / 2;
       }
+
+      const scale = imageTransform?.scale || 1;
+      const offX = ((imageTransform?.offsetX || 0) / 500) * width;
+      const offY = ((imageTransform?.offsetY || 0) / 500) * height;
+
+      drawW = drawW * scale;
+      drawH = drawH * scale;
+      drawX = drawX - (drawW - boundW) / 2 + offX;
+      drawY = drawY - (drawH - boundH) / 2 + offY;
 
       ctx.drawImage(photoImg, drawX, drawY, drawW, drawH);
       ctx.restore();
@@ -251,17 +278,26 @@ export async function composePrintReadySheet({
       '';
 
     if (text) {
+      const slotStyle = textStyles[slot.id] || {};
+      const chosenFontFamily = slotStyle.fontFamily || globalTextStyle?.fontFamily || slot.fontFamily;
+      const family = getFontFamilyCss(chosenFontFamily);
+      const chosenColor = slotStyle.fontColor || globalTextStyle?.fontColor || slot.fontColor || '#1e293b';
+
+      const isBold = slotStyle.isBold !== undefined ? slotStyle.isBold : globalTextStyle?.isBold !== undefined ? globalTextStyle.isBold : (slot.fontWeight === 'bold');
+      const isItalic = slotStyle.isItalic !== undefined ? slotStyle.isItalic : globalTextStyle?.isItalic || false;
+      const sizeDelta = (slotStyle.fontSizeDelta !== undefined ? slotStyle.fontSizeDelta : globalTextStyle?.fontSizeDelta) || 0;
+
       const tX = (slot.x / 100) * width;
       const tY = (slot.y / 100) * height;
-      const baseSize = slot.fontSize || 16;
+      const baseSize = Math.max(8, (slot.fontSize || 16) + sizeDelta);
       const scaledFontSize = Math.round((baseSize / 500) * width);
 
       ctx.save();
-      const weight = slot.fontWeight || 'bold';
-      const family = getFontFamilyCss(slot.fontFamily);
+      const weight = isBold ? 'bold' : 'normal';
+      const fontStyle = isItalic ? 'italic' : 'normal';
 
-      ctx.font = `${weight} ${scaledFontSize}px ${family}`;
-      ctx.fillStyle = slot.fontColor || '#1e293b';
+      ctx.font = `${fontStyle} ${weight} ${scaledFontSize}px ${family}`;
+      ctx.fillStyle = chosenColor;
       ctx.textAlign = (slot.textAlign as CanvasTextAlign) || 'left';
       ctx.textBaseline = 'top';
       ctx.fillText(text, tX, tY);

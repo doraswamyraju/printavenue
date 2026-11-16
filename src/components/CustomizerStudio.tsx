@@ -10,8 +10,15 @@ import {
   CheckCircle2,
   ShoppingBag,
   Type,
-  Eye
+  Eye,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  RotateCcw,
+  Bold,
+  Italic
 } from 'lucide-react';
+import { AVAILABLE_FONTS } from '@/lib/fonts';
 import { Product, SheetDefinition, CustomizedSheetItem } from '@/types';
 import { SheetRenderer } from '@/components/SheetRenderer';
 import { CalendarMockupFrame } from '@/components/CalendarMockupFrame';
@@ -26,6 +33,13 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
   const [currentSheetIndex, setCurrentSheetIndex] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [showFullReview, setShowFullReview] = useState<boolean>(false);
+
+  // Customer Typography Styling State
+  const [globalFontFamily, setGlobalFontFamily] = useState<string>('Inter');
+  const [globalFontColor, setGlobalFontColor] = useState<string>('#ffffff');
+  const [globalIsBold, setGlobalIsBold] = useState<boolean>(true);
+  const [globalIsItalic, setGlobalIsItalic] = useState<boolean>(false);
+  const [globalFontSizeDelta, setGlobalFontSizeDelta] = useState<number>(0);
 
   // Initialize sheet selections state
   const [sheetData, setSheetData] = useState<Record<string, CustomizedSheetItem>>(() => {
@@ -49,6 +63,30 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
   const activeTemplate =
     currentSheet.templates.find((t) => t.id === currentSheetItem.selectedTemplateId) ||
     currentSheet.templates[0];
+
+  const updateCurrentSheetTransform = (scale: number, offsetX: number, offsetY: number) => {
+    setSheetData((prev) => ({
+      ...prev,
+      [currentSheet.id]: {
+        ...prev[currentSheet.id],
+        imageTransform: {
+          scale: Math.max(0.5, Math.min(4.0, scale)),
+          offsetX,
+          offsetY,
+        },
+      },
+    }));
+  };
+
+  const resetCurrentSheetTransform = () => {
+    setSheetData((prev) => ({
+      ...prev,
+      [currentSheet.id]: {
+        ...prev[currentSheet.id],
+        imageTransform: { scale: 1, offsetX: 0, offsetY: 0 },
+      },
+    }));
+  };
 
   // Pricing calculation based on tier slabs
   const calculateUnitPrice = (qty: number) => {
@@ -167,11 +205,10 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                 <button
                   key={yr}
                   onClick={() => setSelectedYear(yr)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                    selectedYear === yr
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${selectedYear === yr
                       ? 'bg-rose-600 text-white shadow-sm'
                       : 'text-slate-700 hover:bg-white'
-                  }`}
+                    }`}
                 >
                   {yr}
                 </button>
@@ -202,13 +239,12 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                     setCurrentSheetIndex(idx);
                     setShowFullReview(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                    isActive
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${isActive
                       ? 'bg-rose-600 text-white shadow-sm'
                       : isFilled
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                  }`}
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
                 >
                   {isFilled && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                   <span>{sheet.title}</span>
@@ -233,6 +269,14 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                 sheetTitle={currentSheet.title}
                 userImage={currentSheetItem.userImageBase64}
                 customText={currentSheetItem.customText}
+                imageTransform={currentSheetItem.imageTransform}
+                globalTextStyle={{
+                  fontFamily: globalFontFamily,
+                  fontColor: globalFontColor,
+                  isBold: globalIsBold,
+                  isItalic: globalIsItalic,
+                  fontSizeDelta: globalFontSizeDelta,
+                }}
                 aspectRatio={currentSheet.aspectRatio}
               />
             </CalendarMockupFrame>
@@ -304,6 +348,197 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
               <Upload className="w-4 h-4" />
               {currentSheetItem.userImageBase64 ? 'Change Photo' : 'Choose Photo (PNG / JPG / WEBP)'}
             </button>
+
+            {/* Photo Positioning, Pan & Zoom */}
+            {currentSheetItem.userImageBase64 && (
+              <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                  <span className="flex items-center gap-1.5">
+                    <Move className="w-3.5 h-3.5 text-rose-500" /> Photo Pan & Zoom:
+                  </span>
+                  <span className="text-rose-600 font-mono">
+                    {((currentSheetItem.imageTransform?.scale || 1) * 100).toFixed(0)}%
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const curScale = currentSheetItem.imageTransform?.scale || 1;
+                      updateCurrentSheetTransform(curScale - 0.15, currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={3.0}
+                    step={0.05}
+                    value={currentSheetItem.imageTransform?.scale || 1}
+                    onChange={(e) => {
+                      updateCurrentSheetTransform(parseFloat(e.target.value), currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                    }}
+                    className="flex-1 accent-rose-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const curScale = currentSheetItem.imageTransform?.scale || 1;
+                      updateCurrentSheetTransform(curScale + 0.15, currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={resetCurrentSheetTransform}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 border border-slate-200 text-xs"
+                    title="Reset Position"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Move / Pan Direction Buttons */}
+                <div className="flex items-center justify-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, (currentSheetItem.imageTransform?.offsetX || 0) - 10, currentSheetItem.imageTransform?.offsetY || 0)}
+                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 border border-slate-200 font-medium"
+                  >
+                    ← Left
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, currentSheetItem.imageTransform?.offsetX || 0, (currentSheetItem.imageTransform?.offsetY || 0) - 10)}
+                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 border border-slate-200 font-medium"
+                  >
+                    ↑ Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, currentSheetItem.imageTransform?.offsetX || 0, (currentSheetItem.imageTransform?.offsetY || 0) + 10)}
+                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 border border-slate-200 font-medium"
+                  >
+                    ↓ Down
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, (currentSheetItem.imageTransform?.offsetX || 0) + 10, currentSheetItem.imageTransform?.offsetY || 0)}
+                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 border border-slate-200 font-medium"
+                  >
+                    Right →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Typography Formatting Card */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center text-xs font-bold">
+                <Type className="w-3.5 h-3.5" />
+              </span>
+              <h3 className="font-bold text-sm text-slate-900">
+                Text Style, Font & Color
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Font Family
+                </label>
+                <select
+                  value={globalFontFamily}
+                  onChange={(e) => setGlobalFontFamily(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-800 font-medium focus:ring-1 focus:ring-rose-500 bg-white"
+                >
+                  {AVAILABLE_FONTS.map((f) => (
+                    <option key={f.id} value={f.name}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Font Colour
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {['#ffffff', '#0f172a', '#f43f5e', '#2563eb', '#10b981', '#f59e0b', '#8b5cf6'].map((hex) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      onClick={() => setGlobalFontColor(hex)}
+                      className={`w-6 h-6 rounded-full border transition ${globalFontColor.toLowerCase() === hex ? 'ring-2 ring-rose-500 scale-110' : 'border-slate-300'
+                        }`}
+                      style={{ backgroundColor: hex }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    value={globalFontColor}
+                    onChange={(e) => setGlobalFontColor(e.target.value)}
+                    className="w-6 h-6 rounded-full cursor-pointer bg-transparent border-0 p-0"
+                    title="Custom Color"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGlobalIsBold(!globalIsBold)}
+                  className={`px-3 py-1 rounded-lg border text-xs font-bold transition flex items-center gap-1 ${globalIsBold ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-100 border-slate-200 text-slate-700'
+                    }`}
+                >
+                  <Bold className="w-3.5 h-3.5" /> Bold
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGlobalIsItalic(!globalIsItalic)}
+                  className={`px-3 py-1 rounded-lg border text-xs font-bold transition flex items-center gap-1 ${globalIsItalic ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-100 border-slate-200 text-slate-700'
+                    }`}
+                >
+                  <Italic className="w-3.5 h-3.5" /> Italic
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-xs text-slate-700">
+                <span className="text-[10px] text-slate-500 px-1.5 font-bold">Size</span>
+                <button
+                  type="button"
+                  onClick={() => setGlobalFontSizeDelta((d) => Math.max(-8, d - 2))}
+                  className="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold"
+                >
+                  -
+                </button>
+                <span className="text-[10px] font-mono px-1 font-bold">
+                  {globalFontSizeDelta >= 0 ? `+${globalFontSizeDelta}` : globalFontSizeDelta}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setGlobalFontSizeDelta((d) => Math.min(16, d + 2))}
+                  className="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Step 2: Instant Multi-Template Selector */}
@@ -334,11 +569,10 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                   <button
                     key={tpl.id}
                     onClick={() => handleSelectTemplate(tpl.id)}
-                    className={`relative p-2 rounded-xl text-left border-2 transition-all flex flex-col gap-2 ${
-                      isSelected
+                    className={`relative p-2 rounded-xl text-left border-2 transition-all flex flex-col gap-2 ${isSelected
                         ? 'border-rose-600 bg-rose-50/20 shadow-md ring-2 ring-rose-600/20'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
+                      }`}
                   >
                     {/* Live Miniature Preview of this Template with uploaded photo */}
                     <div className="w-full rounded overflow-hidden pointer-events-none">
@@ -424,11 +658,10 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
               {product.tiers.map((tier, i) => (
                 <div
                   key={i}
-                  className={`p-1 rounded ${
-                    quantity >= tier.minQty && (tier.maxQty ? quantity <= tier.maxQty : true)
+                  className={`p-1 rounded ${quantity >= tier.minQty && (tier.maxQty ? quantity <= tier.maxQty : true)
                       ? 'bg-rose-600 text-white font-bold'
                       : 'text-slate-400'
-                  }`}
+                    }`}
                 >
                   <div>{tier.maxQty ? `${tier.minQty}-${tier.maxQty}` : `${tier.minQty}+`} pcs</div>
                   <div className="font-bold">₹{tier.pricePerUnit}</div>

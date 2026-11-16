@@ -46,6 +46,17 @@ class MainViewModel : ViewModel() {
     private val _logoUrl = MutableStateFlow<String?>(null)
     val logoUrl: StateFlow<String?> = _logoUrl
 
+    // Per-sheet Photo Transformation (Pinch, Zoom, Move)
+    private val _photoTransforms = MutableStateFlow<Map<Int, ImageTransformState>>(emptyMap())
+    val photoTransforms: StateFlow<Map<Int, ImageTransformState>> = _photoTransforms
+
+    // Custom Text Styles (Font, Color, Bold, Italic, Size)
+    private val _globalTextStyle = MutableStateFlow(CustomTextStyle())
+    val globalTextStyle: StateFlow<CustomTextStyle> = _globalTextStyle
+
+    private val _slotTextStyles = MutableStateFlow<Map<String, CustomTextStyle>>(emptyMap())
+    val slotTextStyles: StateFlow<Map<String, CustomTextStyle>> = _slotTextStyles
+
     init {
         fetchProducts()
     }
@@ -97,6 +108,47 @@ class MainViewModel : ViewModel() {
                 _isUploading.value = false
             }
         }
+    }
+
+    fun updatePhotoTransform(sheetIndex: Int, scale: Float, offsetX: Float, offsetY: Float) {
+        val current = _photoTransforms.value[sheetIndex] ?: ImageTransformState()
+        _photoTransforms.value = _photoTransforms.value + (sheetIndex to current.copy(
+            scale = scale.coerceIn(0.5f, 5.0f),
+            offsetX = offsetX,
+            offsetY = offsetY
+        ))
+    }
+
+    fun resetPhotoTransform(sheetIndex: Int) {
+        _photoTransforms.value = _photoTransforms.value + (sheetIndex to ImageTransformState())
+    }
+
+    fun updateGlobalFontFamily(font: String) {
+        _globalTextStyle.value = _globalTextStyle.value.copy(fontFamily = font)
+    }
+
+    fun updateGlobalFontColor(colorHex: String) {
+        _globalTextStyle.value = _globalTextStyle.value.copy(fontColor = colorHex)
+    }
+
+    fun toggleGlobalBold() {
+        val current = _globalTextStyle.value
+        _globalTextStyle.value = current.copy(isBold = !current.isBold)
+    }
+
+    fun toggleGlobalItalic() {
+        val current = _globalTextStyle.value
+        _globalTextStyle.value = current.copy(isItalic = !current.isItalic)
+    }
+
+    fun adjustGlobalFontSize(delta: Int) {
+        val current = _globalTextStyle.value
+        val newDelta = (current.fontSizeDelta + delta).coerceIn(-10, 20)
+        _globalTextStyle.value = current.copy(fontSizeDelta = newDelta)
+    }
+
+    fun updateSlotTextStyle(slotId: String, style: CustomTextStyle) {
+        _slotTextStyles.value = _slotTextStyles.value + (slotId to style)
     }
 
     fun uploadLogo(file: File, onResult: (Boolean, String) -> Unit) {

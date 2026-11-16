@@ -16,8 +16,15 @@ import {
   Eye,
   ArrowLeft,
   Maximize2,
-  X
+  X,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Bold,
+  Italic,
+  Move
 } from 'lucide-react';
+import { AVAILABLE_FONTS } from '@/lib/fonts';
 
 import { composePrintReadySheet } from '@/lib/compositor';
 
@@ -47,6 +54,38 @@ export const StudioView: React.FC<Props> = ({
   const [globalBrandName, setGlobalBrandName] = useState<string>('');
   const [globalTextInputs, setGlobalTextInputs] = useState<Record<string, string>>({});
   const [showGlobalSettings, setShowGlobalSettings] = useState<boolean>(true);
+
+  // Customer Typography Styling State
+  const [globalFontFamily, setGlobalFontFamily] = useState<string>('Inter');
+  const [globalFontColor, setGlobalFontColor] = useState<string>('#ffffff');
+  const [globalIsBold, setGlobalIsBold] = useState<boolean>(true);
+  const [globalIsItalic, setGlobalIsItalic] = useState<boolean>(false);
+  const [globalFontSizeDelta, setGlobalFontSizeDelta] = useState<number>(0);
+
+  // Photo transform helper
+  const updateCurrentSheetTransform = (scale: number, offsetX: number, offsetY: number) => {
+    setSheetData((prev) => ({
+      ...prev,
+      [currentSheet.id]: {
+        ...prev[currentSheet.id],
+        imageTransform: {
+          scale: Math.max(0.5, Math.min(4.0, scale)),
+          offsetX,
+          offsetY,
+        },
+      },
+    }));
+  };
+
+  const resetCurrentSheetTransform = () => {
+    setSheetData((prev) => ({
+      ...prev,
+      [currentSheet.id]: {
+        ...prev[currentSheet.id],
+        imageTransform: { scale: 1, offsetX: 0, offsetY: 0 },
+      },
+    }));
+  };
 
   // Sheet states
   const [sheetData, setSheetData] = useState<Record<string, CustomizedSheetItem>>(() => {
@@ -337,6 +376,94 @@ export const StudioView: React.FC<Props> = ({
                   );
                 });
               })()}
+
+              {/* Typography & Font Formatting Row */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3 pt-3 mt-1 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-[11px] font-bold text-rose-400">Typography:</span>
+
+                  {/* Font Family */}
+                  <select
+                    value={globalFontFamily}
+                    onChange={(e) => setGlobalFontFamily(e.target.value)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-medium focus:outline-none focus:ring-1 focus:ring-rose-500"
+                  >
+                    {AVAILABLE_FONTS.map((f) => (
+                      <option key={f.id} value={f.name}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Font Colour Palette */}
+                  <div className="flex items-center gap-1.5">
+                    {['#ffffff', '#0f172a', '#f43f5e', '#2563eb', '#10b981', '#f59e0b', '#8b5cf6'].map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => setGlobalFontColor(hex)}
+                        className={`w-6 h-6 rounded-full border transition ${
+                          globalFontColor.toLowerCase() === hex ? 'ring-2 ring-rose-500 scale-110' : 'border-slate-700'
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={globalFontColor}
+                      onChange={(e) => setGlobalFontColor(e.target.value)}
+                      className="w-6 h-6 rounded-full cursor-pointer bg-transparent border-0 p-0"
+                      title="Custom Color"
+                    />
+                  </div>
+                </div>
+
+                {/* Bold, Italic & Size */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGlobalIsBold(!globalIsBold)}
+                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${
+                      globalIsBold ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+                    }`}
+                    title="Toggle Bold"
+                  >
+                    <Bold className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGlobalIsItalic(!globalIsItalic)}
+                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${
+                      globalIsItalic ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+                    }`}
+                    title="Toggle Italic"
+                  >
+                    <Italic className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg p-0.5 text-xs text-white">
+                    <span className="text-[10px] text-slate-400 px-1.5">Size</span>
+                    <button
+                      type="button"
+                      onClick={() => setGlobalFontSizeDelta((d) => Math.max(-8, d - 2))}
+                      className="w-5 h-5 rounded hover:bg-slate-800 flex items-center justify-center font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="text-[10px] font-mono px-1">
+                      {globalFontSizeDelta >= 0 ? `+${globalFontSizeDelta}` : globalFontSizeDelta}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setGlobalFontSizeDelta((d) => Math.min(16, d + 2))}
+                      className="w-5 h-5 rounded hover:bg-slate-800 flex items-center justify-center font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -386,6 +513,14 @@ export const StudioView: React.FC<Props> = ({
                   globalLogo={globalLogoBase64}
                   globalBrandName={globalBrandName}
                   globalTextInputs={globalTextInputs}
+                  imageTransform={currentSheetItem.imageTransform}
+                  globalTextStyle={{
+                    fontFamily: globalFontFamily,
+                    fontColor: globalFontColor,
+                    isBold: globalIsBold,
+                    isItalic: globalIsItalic,
+                    fontSizeDelta: globalFontSizeDelta,
+                  }}
                   aspectRatio={currentSheet.aspectRatio}
                   productCategory={product.category}
                 />
@@ -446,6 +581,99 @@ export const StudioView: React.FC<Props> = ({
                   className="hidden"
                 />
               </label>
+
+              {/* Photo Positioning, Pan & Zoom */}
+              {currentSheetItem.userImageBase64 && (
+                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                    <span className="flex items-center gap-1.5">
+                      <Move className="w-3.5 h-3.5 text-rose-400" /> Photo Pan & Zoom:
+                    </span>
+                    <span className="text-cyan-400 font-mono">
+                      {((currentSheetItem.imageTransform?.scale || 1) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curScale = currentSheetItem.imageTransform?.scale || 1;
+                        updateCurrentSheetTransform(curScale - 0.15, currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                      }}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={3.0}
+                      step={0.05}
+                      value={currentSheetItem.imageTransform?.scale || 1}
+                      onChange={(e) => {
+                        updateCurrentSheetTransform(parseFloat(e.target.value), currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                      }}
+                      className="flex-1 accent-rose-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curScale = currentSheetItem.imageTransform?.scale || 1;
+                        updateCurrentSheetTransform(curScale + 0.15, currentSheetItem.imageTransform?.offsetX || 0, currentSheetItem.imageTransform?.offsetY || 0);
+                      }}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold"
+                      title="Zoom In"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={resetCurrentSheetTransform}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs"
+                      title="Reset Position"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Move / Pan Direction Buttons */}
+                  <div className="flex items-center justify-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, (currentSheetItem.imageTransform?.offsetX || 0) - 10, currentSheetItem.imageTransform?.offsetY || 0)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700"
+                    >
+                      ← Left
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, currentSheetItem.imageTransform?.offsetX || 0, (currentSheetItem.imageTransform?.offsetY || 0) - 10)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700"
+                    >
+                      ↑ Up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, currentSheetItem.imageTransform?.offsetX || 0, (currentSheetItem.imageTransform?.offsetY || 0) + 10)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700"
+                    >
+                      ↓ Down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateCurrentSheetTransform(currentSheetItem.imageTransform?.scale || 1, (currentSheetItem.imageTransform?.offsetX || 0) + 10, currentSheetItem.imageTransform?.offsetY || 0)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700"
+                    >
+                      Right →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. Instant Multi-Design options */}

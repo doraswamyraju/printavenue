@@ -8,7 +8,9 @@ import {
   Printer,
   ChevronRight,
   Plus,
-  ExternalLink
+  ExternalLink,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Order, Product, OrderStatus } from '@/types';
 
@@ -402,10 +404,56 @@ export const AdminDashboard: React.FC<Props> = ({
                 className="p-5 rounded-2xl bg-slate-800 border border-slate-700 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-700 text-slate-300">
+                  {/* Thumbnail & Upload */}
+                  <div className="relative w-full h-36 rounded-xl bg-slate-900 border border-slate-700 overflow-hidden mb-3 group">
+                    {p.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.thumbnail}
+                        alt={p.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-1">
+                        <ImageIcon className="w-8 h-8" />
+                        <span className="text-[10px]">No Thumbnail</span>
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 backdrop-blur-xs">
+                      <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Change Thumbnail</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                            const data = await res.json();
+                            if (data.url) {
+                              await fetch('/api/products', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ product: { ...p, thumbnail: data.url } }),
+                              });
+                              window.location.reload();
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-900/80 backdrop-blur-md text-slate-200 border border-slate-700">
                       {p.category.toUpperCase()}
                     </span>
+                  </div>
+
+                  <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-rose-400">₹{p.basePrice}</span>
                   </div>
                   <h3 className="font-bold text-base text-white">{p.title}</h3>

@@ -12,7 +12,10 @@ import {
   Copy,
   Plus,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  Upload,
+  Image as ImageIcon,
+  Camera
 } from 'lucide-react';
 import { TemplateBuilderModal } from '@/components/admin/TemplateBuilderModal';
 import { CreateProductModal } from '@/components/admin/CreateProductModal';
@@ -42,6 +45,52 @@ export const ProductsManagementView: React.FC<Props> = ({
 
   const [filterMonth, setFilterMonth] = useState<string>('ALL');
   const [isCreateProductOpen, setIsCreateProductOpen] = useState(false);
+  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
+
+  const handleProductThumbnailUpload = async (product: Product, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingProductId(product.id);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      let newThumbnailUrl = data.url;
+      if (!newThumbnailUrl) {
+        newThumbnailUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const updatedProduct = {
+        ...product,
+        thumbnail: newThumbnailUrl,
+      };
+
+      const saveRes = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product: updatedProduct }),
+      });
+
+      if (saveRes.ok) {
+        onRefresh();
+      } else {
+        alert('Failed to update product thumbnail');
+      }
+    } catch (err) {
+      console.error('Thumbnail upload error:', err);
+      alert('Failed to upload thumbnail');
+    } finally {
+      setUploadingProductId(null);
+    }
+  };
 
   const isSuperAdmin = user.role === 'superadmin';
 
@@ -301,11 +350,45 @@ export const ProductsManagementView: React.FC<Props> = ({
                 className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between shadow-lg"
               >
                 <div>
+                  {/* Product Thumbnail with Upload Trigger */}
+                  <div className="relative w-full h-36 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden mb-3 group">
+                    {p.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.thumbnail}
+                        alt={p.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                        <ImageIcon className="w-8 h-8" />
+                        <span className="text-[10px]">No Thumbnail</span>
+                      </div>
+                    )}
+
+                    {/* Upload / Change Thumbnail Button Overlay */}
+                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 backdrop-blur-xs">
+                      <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg transition">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingProductId === p.id ? 'Uploading...' : 'Change Thumbnail'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={uploadingProductId === p.id}
+                          onChange={(e) => handleProductThumbnailUpload(p, e)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* Badge */}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-900/80 backdrop-blur-md text-slate-200 border border-slate-700">
+                      {p.category.toUpperCase()}
+                    </span>
+                  </div>
+
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                        {p.category.toUpperCase()}
-                      </span>
                       {p.status === 'draft' ? (
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                           STAGING DRAFT

@@ -15,6 +15,22 @@ interface Props {
   globalLogo?: string;
   globalBrandName?: string;
   globalTextInputs?: Record<string, string>;
+  imageTransform?: { scale?: number; offsetX?: number; offsetY?: number };
+  globalTextStyle?: {
+    fontFamily?: string;
+    fontColor?: string;
+    fontSizeDelta?: number;
+    isBold?: boolean;
+    isItalic?: boolean;
+  };
+  textStyles?: Record<string, {
+    fontFamily?: string;
+    fontColor?: string;
+    fontSizeDelta?: number;
+    isBold?: boolean;
+    isItalic?: boolean;
+  }>;
+  onImageMove?: (offsetX: number, offsetY: number) => void;
   interactive?: boolean;
   aspectRatio?: string; // e.g. "1.414" or "0.707"
   productCategory?: string; // 'desk' | 'wall' | 'memento' | 'banner' | 'card' etc.
@@ -31,6 +47,10 @@ export const SheetRenderer: React.FC<Props> = ({
   globalLogo,
   globalBrandName,
   globalTextInputs = {},
+  imageTransform,
+  globalTextStyle,
+  textStyles = {},
+  onImageMove,
   aspectRatio = '1.414',
   productCategory,
   className = '',
@@ -69,10 +89,12 @@ export const SheetRenderer: React.FC<Props> = ({
           <img
             src={userImage}
             alt="Uploaded customization"
-            className="w-full h-full pointer-events-none"
+            className="w-full h-full pointer-events-none transition-transform duration-75"
             style={{
               objectFit: 'cover',
               objectPosition: `${((template.imageLayout.x + template.imageLayout.width / 2) || 50).toFixed(1)}% ${((template.imageLayout.y + template.imageLayout.height / 2) || 50).toFixed(1)}%`,
+              transform: `scale(${imageTransform?.scale || 1}) translate(${imageTransform?.offsetX || 0}px, ${imageTransform?.offsetY || 0}px)`,
+              transformOrigin: 'center center',
             }}
           />
         ) : (
@@ -228,7 +250,14 @@ export const SheetRenderer: React.FC<Props> = ({
             slot.placeholder ||
             slot.label;
 
-          const fontFamilyCss = getFontFamilyCss(slot.fontFamily);
+          const slotStyle = textStyles[slot.id] || {};
+          const chosenFontFamily = slotStyle.fontFamily || globalTextStyle?.fontFamily || slot.fontFamily;
+          const fontFamilyCss = getFontFamilyCss(chosenFontFamily);
+          const chosenFontColor = slotStyle.fontColor || globalTextStyle?.fontColor || slot.fontColor || '#1e293b';
+          const sizeDelta = (slotStyle.fontSizeDelta !== undefined ? slotStyle.fontSizeDelta : globalTextStyle?.fontSizeDelta) || 0;
+          const chosenFontSize = Math.max(8, (slot.fontSize || 13) + sizeDelta);
+          const isBold = slotStyle.isBold !== undefined ? slotStyle.isBold : globalTextStyle?.isBold !== undefined ? globalTextStyle.isBold : (slot.fontWeight === 'bold');
+          const isItalic = slotStyle.isItalic !== undefined ? slotStyle.isItalic : globalTextStyle?.isItalic || false;
 
           return (
             <div
@@ -243,10 +272,11 @@ export const SheetRenderer: React.FC<Props> = ({
             >
               <span
                 style={{
-                  color: slot.fontColor || '#1e293b',
-                  fontSize: `${slot.fontSize || 13}px`,
+                  color: chosenFontColor,
+                  fontSize: `${chosenFontSize}px`,
                   fontFamily: fontFamilyCss,
-                  fontWeight: slot.fontWeight || 'bold',
+                  fontWeight: isBold ? 'bold' : 'normal',
+                  fontStyle: isItalic ? 'italic' : 'normal',
                 }}
                 className="tracking-tight leading-tight block drop-shadow-sm select-none"
               >

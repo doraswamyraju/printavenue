@@ -87,9 +87,25 @@ data class ImageLayout(
     val y: Double = 0.0,
     val width: Double = 100.0,
     val height: Double = 100.0,
-    val shapeType: String? = "rectangle", // "rectangle" or "polygon"
+    val borderRadius: Double? = 0.0,
+    val shapeType: String? = "rectangle", // "rectangle", "circle", "polygon"
     val polygonPoints: String? = null,
     val layerPosition: String? = "under-artwork" // "under-artwork" or "above-artwork"
+)
+
+data class ImageTransformState(
+    val scale: Float = 1f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
+    val rotation: Float = 0f
+)
+
+data class CustomTextStyle(
+    val fontFamily: String = "Inter",
+    val fontColor: String = "#FFFFFF",
+    val isBold: Boolean = true,
+    val isItalic: Boolean = false,
+    val fontSizeDelta: Int = 0
 )
 
 data class BrandingBadge(
