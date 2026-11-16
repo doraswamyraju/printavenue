@@ -216,8 +216,8 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                   key={yr}
                   onClick={() => setSelectedYear(yr)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${selectedYear === yr
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'text-slate-700 hover:bg-white'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-white'
                     }`}
                 >
                   {yr}
@@ -250,10 +250,10 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                     setShowFullReview(false);
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${isActive
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : isFilled
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : isFilled
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                     }`}
                 >
                   {isFilled && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
@@ -580,8 +580,8 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                     key={tpl.id}
                     onClick={() => handleSelectTemplate(tpl.id)}
                     className={`relative p-2 rounded-xl text-left border-2 transition-all flex flex-col gap-2 ${isSelected
-                        ? 'border-rose-600 bg-rose-50/20 shadow-md ring-2 ring-rose-600/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-rose-600 bg-rose-50/20 shadow-md ring-2 ring-rose-600/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                   >
                     {/* Live Miniature Preview of this Template with uploaded photo */}
@@ -669,8 +669,8 @@ export const CustomizerStudio: React.FC<Props> = ({ product }) => {
                 <div
                   key={i}
                   className={`p-1 rounded ${quantity >= tier.minQty && (tier.maxQty ? quantity <= tier.maxQty : true)
-                      ? 'bg-rose-600 text-white font-bold'
-                      : 'text-slate-400'
+                    ? 'bg-rose-600 text-white font-bold'
+                    : 'text-slate-400'
                     }`}
                 >
                   <div>{tier.maxQty ? `${tier.minQty}-${tier.maxQty}` : `${tier.minQty}+`} pcs</div>

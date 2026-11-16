@@ -258,11 +258,10 @@ export const StudioView: React.FC<Props> = ({
                   <button
                     key={yr}
                     onClick={() => setSelectedYear(yr)}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                      selectedYear === yr
+                    className={`px-2.5 py-1 rounded-lg font-bold transition ${selectedYear === yr
                         ? 'bg-rose-600 text-white shadow'
                         : 'text-slate-400 hover:text-white'
-                    }`}
+                      }`}
                   >
                     {yr}
                   </button>
@@ -412,9 +411,8 @@ export const StudioView: React.FC<Props> = ({
                         key={hex}
                         type="button"
                         onClick={() => setGlobalFontColor(hex)}
-                        className={`w-6 h-6 rounded-full border transition ${
-                          globalFontColor.toLowerCase() === hex ? 'ring-2 ring-rose-500 scale-110' : 'border-slate-700'
-                        }`}
+                        className={`w-6 h-6 rounded-full border transition ${globalFontColor.toLowerCase() === hex ? 'ring-2 ring-rose-500 scale-110' : 'border-slate-700'
+                          }`}
                         style={{ backgroundColor: hex }}
                       />
                     ))}
@@ -433,9 +431,8 @@ export const StudioView: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setGlobalIsBold(!globalIsBold)}
-                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${
-                      globalIsBold ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
-                    }`}
+                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${globalIsBold ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+                      }`}
                     title="Toggle Bold"
                   >
                     <Bold className="w-3.5 h-3.5" />
@@ -444,9 +441,8 @@ export const StudioView: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setGlobalIsItalic(!globalIsItalic)}
-                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${
-                      globalIsItalic ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
-                    }`}
+                    className={`p-1.5 rounded-lg border text-xs font-bold transition ${globalIsItalic ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+                      }`}
                     title="Toggle Italic"
                   >
                     <Italic className="w-3.5 h-3.5" />
@@ -490,13 +486,12 @@ export const StudioView: React.FC<Props> = ({
                   setCurrentSheetIndex(idx);
                   setShowFullReview(false);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  isActive
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isActive
                     ? 'bg-rose-600 text-white shadow-md'
                     : isFilled
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                    : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
-                }`}
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                      : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                  }`}
               >
                 {isFilled && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
                 <span>{sheet.title}</span>
@@ -718,11 +713,10 @@ export const StudioView: React.FC<Props> = ({
                           },
                         }));
                       }}
-                      className={`p-2 rounded-xl border-2 text-left transition flex flex-col gap-2 ${
-                        isSelected
+                      className={`p-2 rounded-xl border-2 text-left transition flex flex-col gap-2 ${isSelected
                           ? 'border-rose-600 bg-slate-800 shadow-md ring-2 ring-rose-600/30'
                           : 'border-slate-800 bg-slate-950 hover:border-slate-700'
-                      }`}
+                        }`}
                     >
                       <div className="rounded overflow-hidden pointer-events-none">
                         <SheetRenderer
@@ -848,11 +842,10 @@ export const StudioView: React.FC<Props> = ({
                         }));
                         setShowBroadTemplatesModal(false);
                       }}
-                      className={`group cursor-pointer rounded-2xl border-2 p-3 transition flex flex-col gap-3 ${
-                        isSelected
+                      className={`group cursor-pointer rounded-2xl border-2 p-3 transition flex flex-col gap-3 ${isSelected
                           ? 'border-rose-600 bg-slate-800/90 shadow-2xl ring-2 ring-rose-600/40'
                           : 'border-slate-800 bg-slate-950 hover:border-slate-700 hover:bg-slate-900'
-                      }`}
+                        }`}
                     >
                       <div className="rounded-xl overflow-hidden pointer-events-none shadow-md">
                         <SheetRenderer

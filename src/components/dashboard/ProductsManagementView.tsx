@@ -186,21 +186,19 @@ export const ProductsManagementView: React.FC<Props> = ({
           <div className="flex rounded-xl bg-slate-900 p-1 border border-slate-800 text-xs font-bold">
             <button
               onClick={() => setActiveTab('templates')}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                activeTab === 'templates'
+              className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'templates'
                   ? 'bg-rose-600 text-white shadow'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               Saved Templates ({allSavedTemplates.length})
             </button>
             <button
               onClick={() => setActiveTab('products')}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                activeTab === 'products'
+              className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'products'
                   ? 'bg-rose-600 text-white shadow'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               Calendar & Custom Products ({products.length})
             </button>
@@ -234,11 +232,10 @@ export const ProductsManagementView: React.FC<Props> = ({
                 <button
                   key={m}
                   onClick={() => setFilterMonth(m)}
-                  className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${
-                    filterMonth === m
+                  className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${filterMonth === m
                       ? 'bg-white text-slate-900 shadow'
                       : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   {m}
                 </button>
@@ -437,11 +434,10 @@ export const ProductsManagementView: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => handleTogglePublish(p.id, p.status)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition border ${
-                          p.status === 'draft'
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition border ${p.status === 'draft'
                             ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-300'
                             : 'bg-amber-950/80 hover:bg-amber-900 border-amber-700 text-amber-300'
-                        }`}
+                          }`}
                         title={p.status === 'draft' ? 'Publish to store' : 'Unpublish to draft'}
                       >
                         {p.status === 'draft' ? 'Publish to Store' : 'Revert to Draft'}
