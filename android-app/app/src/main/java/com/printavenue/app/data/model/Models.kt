@@ -90,7 +90,7 @@ data class ImageLayout(
     val borderRadius: Double? = 0.0,
     val shapeType: String? = "rectangle", // "rectangle", "circle", "polygon"
     val polygonPoints: String? = null,
-    val layerPosition: String? = "under-artwork" // "under-artwork" or "above-artwork"
+    val layerPosition: String? = "above-artwork" // "under-artwork" or "above-artwork"
 )
 
 data class ImageTransformState(

@@ -247,7 +247,7 @@ export const ProductsManagementView: React.FC<Props> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTemplates.map((item, idx) => {
               const { product: prod, sheet, sheetIndex, template: tpl } = item;
-              const isCustomGraphic = tpl.background.type === 'image';
+              const isCustomGraphic = tpl?.background?.type === 'image';
 
               return (
                 <div

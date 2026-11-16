@@ -160,15 +160,16 @@ export async function composePrintReadySheet({
 
   // Subroutine to Draw Base Artwork
   const drawBaseArtwork = async () => {
-    if (template.background.type === 'image' && template.background.value) {
+    const bg = template?.background || { type: 'color', value: '#FFFFFF' };
+    if (bg.type === 'image' && bg.value) {
       try {
-        const bgImg = await loadImage(template.background.value);
+        const bgImg = await loadImage(bg.value);
         ctx.drawImage(bgImg, 0, 0, width, height);
       } catch (err) {
         console.warn('Could not draw background artwork:', err);
       }
-    } else if (template.background.value) {
-      ctx.fillStyle = template.background.value;
+    } else if (bg.value) {
+      ctx.fillStyle = bg.value;
       ctx.fillRect(0, 0, width, height);
     }
   };

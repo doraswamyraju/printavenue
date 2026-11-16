@@ -98,11 +98,16 @@ fun resolveFontFamily(name: String?): FontFamily {
  */
 fun resolveAssetUrl(path: String?): String {
     if (path.isNullOrBlank()) return ""
-    return if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) {
-        path
-    } else {
-        "https://printavenue.sriddha.com${if (path.startsWith("/")) "" else "/"}$path"
+    if (path.startsWith("http://") || path.startsWith("https://") ||
+        path.startsWith("data:") || path.startsWith("content:") ||
+        path.startsWith("file:")
+    ) {
+        return path
     }
+    if (path.startsWith("/storage/") || path.startsWith("/data/")) {
+        return "file://$path"
+    }
+    return "https://printavenue.sriddha.com${if (path.startsWith("/")) "" else "/"}$path"
 }
 
 /**

@@ -50,7 +50,7 @@ export const TemplateBuilderModal: React.FC<Props> = ({
   );
   const [templateName, setTemplateName] = useState(initialTemplate?.name || '');
   const [artworkImage, setArtworkImage] = useState<string>(
-    initialTemplate?.background.type === 'image' ? initialTemplate.background.value : ''
+    initialTemplate?.background?.type === 'image' ? (initialTemplate.background.value || '') : ''
   );
 
   // Dynamic Aspect Ratio: detected from artwork image OR from sheet definition

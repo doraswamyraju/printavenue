@@ -90,6 +90,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun uploadCustomerPhoto(file: File, sheetIndex: Int, onResult: (Boolean, String) -> Unit) {
+        // Set local file path right away for zero-latency instant preview
+        _userPhotos.value = _userPhotos.value + (sheetIndex to file.absolutePath)
         viewModelScope.launch {
             _isUploading.value = true
             try {
@@ -152,6 +154,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun uploadLogo(file: File, onResult: (Boolean, String) -> Unit) {
+        // Instant local preview
+        _logoUrl.value = file.absolutePath
         viewModelScope.launch {
             _isUploading.value = true
             try {
